@@ -1,0 +1,7 @@
+from app.extensions import db
+
+class Matatu(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    plate_number = db.Column(db.String(20), unique=True)
+    capacity = db.Column(db.Integer)
+    driver_id = db.Column(db.Integer, db.ForeignKey("user.id"))
