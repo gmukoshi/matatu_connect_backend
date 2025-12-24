@@ -26,3 +26,6 @@ Flask-Mail==0.9.1
 
 # Production WSGI (optional but recommended)
 gunicorn==22.0.0
+
+# Media Storage (Cloudinary)
+cloudinary==1.41.0
