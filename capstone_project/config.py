@@ -20,3 +20,6 @@ class DevelopmentConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     DEBUG = False
+
+# Alias for default config
+Config = DevelopmentConfig
