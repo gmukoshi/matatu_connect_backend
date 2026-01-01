@@ -1,26 +1,27 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import cloudinary
 import cloudinary.uploader
-import os
 
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET")
-)
+def init_cloudinary(app):
+    """
+    Initialize Cloudinary with credentials from app config.
+    """
+    cloudinary.config(
+        cloud_name=app.config.get("CLOUDINARY_CLOUD_NAME"),
+        api_key=app.config.get("CLOUDINARY_API_KEY"),
+        api_secret=app.config.get("CLOUDINARY_API_SECRET")
+    )
 
-def upload_vehicle_image(file_path, folder="matatu_images"):
+def upload_vehicle_image(file, folder="matatu_images"):
+    """
+    Upload a file to Cloudinary and return the secure URL.
+    Accepts a file object (from Flask request.files).
+    """
     try:
         result = cloudinary.uploader.upload(
-            file_path,
-            folder=folder,
-            use_filename=True,
-            unique_filename=True,
-            overwrite=False
+            file,
+            folder=folder
         )
         return result.get("secure_url")
     except Exception as e:
-        print("Cloudinary Upload Error:", e)
+        print("Cloudinary upload failed:", e)
         return None
