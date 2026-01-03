@@ -8,8 +8,6 @@ __pycache__/
 # Virtual environments
 venv/
 env/
-.capstone_project/
-capstone_project/
 .venv/
 # Environment variables
 .env

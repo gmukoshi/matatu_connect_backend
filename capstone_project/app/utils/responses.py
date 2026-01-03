@@ -1,10 +1,11 @@
-from flask import jsonify
+def make_response(data=None, message=None, error=None, status_code=200):
+    payload = {}
 
-def api_response(message, data=None, status="success", status_code=200):
-    """Standardized JSON response format for all API endpoints."""
-    response = {
-        "status": status,
-        "message": message,
-        "data": data
-    }
-    return response, status_code
+    if message is not None:
+        payload["message"] = message
+    if data is not None:
+        payload["data"] = data
+    if error is not None:
+        payload["error"] = error
+
+    return payload, status_code
