@@ -9,3 +9,5 @@ migrate = Migrate()
 jwt = JWTManager()
 mail = Mail()
 socketio = SocketIO(cors_allowed_origins="*")
+
+
