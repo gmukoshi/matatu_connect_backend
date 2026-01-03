@@ -12,7 +12,6 @@ fake = Faker()
 
 
 def clear_data():
-    # Clear in safe order based on FKs
     db.session.query(Matatu).delete()
     db.session.query(Route).delete()
     db.session.query(User).delete()
@@ -21,8 +20,6 @@ def clear_data():
 
 def seed_users(n=15):
     users = []
-
-    # Create a few drivers so Matatu can reference them
     roles = (["driver"] * 6) + (["commuter"] * 8) + (["sacco_manager"] * 1)
 
     for _ in range(n):

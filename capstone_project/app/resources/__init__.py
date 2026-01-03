@@ -1,11 +1,7 @@
 from .auth import auth_bp
 from .route import RouteListResource
-from .user import UserListResource, UserResource, RegisterResource
+from .user import UserListResource, UserResource
 
-def register_user_resources(api):
-    api.add_resource(RegisterResource, "/auth/register")
-    api.add_resource(UserListResource, "/users")                 # optional admin
-    api.add_resource(UserResource, "/users/<int:user_id>")       # optional
 
 def register_resources(app, api):
     # Blueprint routes
@@ -13,3 +9,5 @@ def register_resources(app, api):
 
     # Flask-RESTful resources
     api.add_resource(RouteListResource, "/routes")
+    api.add_resource(UserListResource, "/users")
+    api.add_resource(UserResource, "/users/<int:user_id>")

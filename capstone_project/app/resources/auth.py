@@ -8,18 +8,18 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    data = request.json(silent=True) or{}#brian added added line 11 to line 15
-    email=data.get("email")
-    password=data.get("password")
+    data = request.get_json(silent=True) or {}
+    email = data.get("email")
+    password = data.get("password")
+
     if not email or not password:
-        return{"error":"email and password are required"},400
-    
+        return {"error": "email and password are required"}, 400
 
     user = User(
-        email=data["email"],
-        role=data.get("role", "commuter")  # default role
+        email=email,
+        role=data.get("role", "commuter")
     )
-    user.set_password(data["password"])
+    user.set_password(password)
 
     db.session.add(user)
     db.session.commit()
@@ -29,16 +29,18 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    data = request.json
+    data = request.get_json(silent=True) or {}
+    email = data.get("email")
+    password = data.get("password")
 
-    user = User.query.filter_by(email=data["email"]).first()
-    if not user or not user.check_password(data["password"]):
+    if not email or not password:
+        return {"error": "email and password are required"}, 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user or not user.check_password(password):
         return {"error": "Invalid credentials"}, 401
 
-    identity = {
-        "id": user.id,
-        "role": user.role
-    }
+    identity = {"id": user.id, "role": user.role}
 
     return {
         "access_token": create_access_token(identity=identity),
