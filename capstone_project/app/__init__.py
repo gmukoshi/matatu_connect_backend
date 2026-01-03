@@ -1,13 +1,14 @@
 from flask import Flask
 from flask_cors import CORS
-from app.extensions import db, jwt, migrate
-from app.utils.errors import (
+from .extensions import db, migrate, jwt, mail, socketio
+from .config import DevelopmentConfig
+from .utils.errors import (
     handle_404_error,
     handle_500_error,
     handle_403_error,
     handle_401_error
 )
-
+   
 def create_app():
     app = Flask(__name__)
 
@@ -27,6 +28,8 @@ def create_app():
     db.init_app(app)
     jwt.init_app(app)
     migrate.init_app(app, db)
+    mail.init_app(app)
+    socketio.init_app(app)
 
     # 4. Register Global Error Handlers
     app.register_error_handler(404, handle_404_error)
@@ -35,11 +38,17 @@ def create_app():
     app.register_error_handler(401, handle_401_error)
 
     # 5. Register Blueprints
-    from app.resources.auth import auth_bp
+    from .resources.auth import auth_bp 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
     # Future blueprints
     # from app.resources.matatu import matatu_bp
     # app.register_blueprint(matatu_bp, url_prefix='/api/matatus')
+#--------------------------------------
 
-    return app
+
+
+    #from .resources import register_resources
+    #register_resources(app)
+
+    #return app
