@@ -1,4 +1,4 @@
-from app.extensions import db
+from ..extensions import db
 from datetime import datetime
 
 class Route(db.Model):
@@ -10,7 +10,8 @@ class Route(db.Model):
     fare = db.Column(db.Float, nullable=False)              # Price (KES)
     distance = db.Column(db.Float, nullable=True)           # Distance in KM (Optional)
     estimated_duration = db.Column(db.String(50), nullable=True) # e.g., "2 hours"
-    
+    route_id = db.Column(db.Integer, db.ForeignKey('routes.id'))
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

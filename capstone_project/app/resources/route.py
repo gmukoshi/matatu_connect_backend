@@ -1,9 +1,8 @@
 from flask import request
 from flask_restful import Resource
-from app.models.route import Route
-from app.extensions import db
-from app.utils.responses import make_response
-
+from ..models.route import Route
+from ..extensions import db
+from ..utils.responses import make_response
 
 class RouteListResource(Resource):
     def get(self):

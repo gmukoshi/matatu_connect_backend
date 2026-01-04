@@ -9,17 +9,17 @@ alias deactivate 'test $?_OLD_VIRTUAL_PATH != 0 && setenv PATH "$_OLD_VIRTUAL_PA
 # Unset irrelevant variables.
 deactivate nondestructive
 
-setenv VIRTUAL_ENV /home/gmukoshi/Development/code/phase-5/matatu_connect_backend/capstone_project
+setenv VIRTUAL_ENV /home/brian_muema/Phase5/matatu_connect_backend/capstone_project
 
 set _OLD_VIRTUAL_PATH="$PATH"
 setenv PATH "$VIRTUAL_ENV/"bin":$PATH"
+setenv VIRTUAL_ENV_PROMPT capstone_project
 
 
 set _OLD_VIRTUAL_PROMPT="$prompt"
 
 if (! "$?VIRTUAL_ENV_DISABLE_PROMPT") then
-    set prompt = '(capstone_project) '"$prompt"
-    setenv VIRTUAL_ENV_PROMPT '(capstone_project) '
+    set prompt = "("capstone_project") $prompt:q"
 endif
 
 alias pydoc python -m pydoc
