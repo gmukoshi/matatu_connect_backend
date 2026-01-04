@@ -4,7 +4,8 @@ from ..models.route import Route
 from ..extensions import db
 from ..utils.responses import make_response
 from ..realtime import broadcast_route_update
-from .matatu import MatatuListResource, MatatuResource
+
+
 class RouteListResource(Resource):
     def get(self):
         try:
@@ -22,12 +23,12 @@ class RouteListResource(Resource):
             return make_response(
                 message="Validation Error",
                 error="Missing fields: origin, destination, fare",
-                status=400
+                status=400,
             )
 
         existing_route = Route.query.filter_by(
             origin=data["origin"],
-            destination=data["destination"]
+            destination=data["destination"],
         ).first()
 
         if existing_route:
@@ -38,20 +39,20 @@ class RouteListResource(Resource):
             destination=data["destination"],
             fare=data["fare"],
             distance=data.get("distance"),
-            estimated_duration=data.get("estimated_duration")
+            estimated_duration=data.get("estimated_duration"),
         )
 
         try:
             db.session.add(new_route)
             db.session.commit()
-            broadcast_route_update(new_route.id, {
-                "type": "created",
-                "route": new_route.to_dict()
-            })
+            broadcast_route_update(
+                new_route.id,
+                {"type": "created", "route": new_route.to_dict()},
+            )
             return make_response(
                 message="Route created successfully",
                 data=new_route.to_dict(),
-                status=201
+                status=201,
             )
         except Exception as e:
             db.session.rollback()
@@ -63,7 +64,6 @@ class RouteResource(Resource):
         route = Route.query.get(route_id)
         if not route:
             return make_response(message="Not found", error="Route not found", status=404)
-
         return make_response(message="Route fetched successfully", data=route.to_dict(), status=200)
 
     def patch(self, route_id):
@@ -80,7 +80,7 @@ class RouteResource(Resource):
             return make_response(
                 message="Validation Error",
                 error="No valid fields to update",
-                status=400
+                status=400,
             )
 
         for key, value in updates.items():
@@ -88,10 +88,10 @@ class RouteResource(Resource):
 
         try:
             db.session.commit()
-            broadcast_route_update(route.id, {
-                "type": "updated",
-                "route": route.to_dict()
-            })
+            broadcast_route_update(
+                route.id,
+                {"type": "updated", "route": route.to_dict()},
+            )
             return make_response(message="Route updated successfully", data=route.to_dict(), status=200)
         except Exception as e:
             db.session.rollback()
@@ -105,19 +105,8 @@ class RouteResource(Resource):
         try:
             db.session.delete(route)
             db.session.commit()
-            broadcast_route_update(route.id, {
-                "type": "updated",
-                "route": route.to_dict()
-            })
+            broadcast_route_update(route.id, {"type": "deleted"})
             return make_response(message="Route deleted successfully", status=200)
         except Exception as e:
             db.session.rollback()
             return make_response(message="Database Error", error=str(e), status=500)
-
-
-def register_resources(api):
-    api.add_resource(RouteListResource, "/routes")
-    api.add_resource(RouteResource, "/routes/<int:route_id>")
-    
-    api.add_resource(MatatuListResource, "/matatus")
-    api.add_resource(MatatuResource, "/matatus/<int:matatu_id>")
