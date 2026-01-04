@@ -46,5 +46,7 @@ def create_app():
     # 6) Register blueprints (if you still use blueprints)
     from .resources.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    from app.resources.route import register_resources
+    register_resources(api)
 
     return app
