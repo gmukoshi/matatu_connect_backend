@@ -7,7 +7,6 @@ from app.utils.responses import make_response
 
 class RouteListResource(Resource):
     def get(self):
-        """GET /routes"""
         try:
             routes = Route.query.all()
             data = [route.to_dict() for route in routes]
@@ -16,7 +15,6 @@ class RouteListResource(Resource):
             return make_response(message="Error fetching routes", error=str(e), status=500)
 
     def post(self):
-        """POST /routes"""
         data = request.get_json() or {}
 
         required = ("origin", "destination", "fare")
@@ -44,20 +42,20 @@ class RouteListResource(Resource):
         )
 
         try:
-            # If you have new_route.save(), keep it. Otherwise use db.session.add/commit.
-            new_route.save()
+            db.session.add(new_route)
+            db.session.commit()
             return make_response(
                 message="Route created successfully",
                 data=new_route.to_dict(),
                 status=201
             )
         except Exception as e:
+            db.session.rollback()
             return make_response(message="Database Error", error=str(e), status=500)
 
 
 class RouteResource(Resource):
     def get(self, route_id):
-        """GET /routes/<route_id>"""
         route = Route.query.get(route_id)
         if not route:
             return make_response(message="Not found", error="Route not found", status=404)
@@ -65,7 +63,6 @@ class RouteResource(Resource):
         return make_response(message="Route fetched successfully", data=route.to_dict(), status=200)
 
     def patch(self, route_id):
-        """PATCH /routes/<route_id>"""
         route = Route.query.get(route_id)
         if not route:
             return make_response(message="Not found", error="Route not found", status=404)
@@ -93,7 +90,6 @@ class RouteResource(Resource):
             return make_response(message="Database Error", error=str(e), status=500)
 
     def delete(self, route_id):
-        """DELETE /routes/<route_id>"""
         route = Route.query.get(route_id)
         if not route:
             return make_response(message="Not found", error="Route not found", status=404)
@@ -105,7 +101,8 @@ class RouteResource(Resource):
         except Exception as e:
             db.session.rollback()
             return make_response(message="Database Error", error=str(e), status=500)
-            
+
+
 def register_resources(api):
     api.add_resource(RouteListResource, "/routes")
     api.add_resource(RouteResource, "/routes/<int:route_id>")
