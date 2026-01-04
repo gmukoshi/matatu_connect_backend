@@ -105,6 +105,7 @@ class RouteResource(Resource):
         except Exception as e:
             db.session.rollback()
             return make_response(message="Database Error", error=str(e), status=500)
+            
 def register_resources(api):
     api.add_resource(RouteListResource, "/routes")
     api.add_resource(RouteResource, "/routes/<int:route_id>")
