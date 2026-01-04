@@ -14,7 +14,7 @@ def create_app():
     mail.init_app(app)
     socketio.init_app(app)
 
-    from .resources import register_resources
-    register_resources(app,api)
+    from app.resources.route import register_resources
+    register_resources(api)
 
     return app
