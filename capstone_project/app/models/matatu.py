@@ -5,7 +5,7 @@ class Matatu(db.Model):
     plate_number = db.Column(db.String(20), unique=True)
     capacity = db.Column(db.Integer)
     driver_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-
+    route_id = db.Column(db.Integer, db.ForeignKey("routes.id"), nullable=True)
 
     def save(self):
         db.session.add(self)
