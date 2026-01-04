@@ -3,7 +3,8 @@ from flask_restful import Resource
 from ..models.route import Route
 from ..extensions import db
 from ..utils.responses import make_response
-
+from ..realtime import broadcast_route_update
+from .matatu import MatatuListResource, MatatuResource
 class RouteListResource(Resource):
     def get(self):
         try:
@@ -43,6 +44,10 @@ class RouteListResource(Resource):
         try:
             db.session.add(new_route)
             db.session.commit()
+            broadcast_route_update(new_route.id, {
+                "type": "created",
+                "route": new_route.to_dict()
+            })
             return make_response(
                 message="Route created successfully",
                 data=new_route.to_dict(),
@@ -83,6 +88,10 @@ class RouteResource(Resource):
 
         try:
             db.session.commit()
+            broadcast_route_update(route.id, {
+                "type": "updated",
+                "route": route.to_dict()
+            })
             return make_response(message="Route updated successfully", data=route.to_dict(), status=200)
         except Exception as e:
             db.session.rollback()
@@ -96,6 +105,10 @@ class RouteResource(Resource):
         try:
             db.session.delete(route)
             db.session.commit()
+            broadcast_route_update(route.id, {
+                "type": "updated",
+                "route": route.to_dict()
+            })
             return make_response(message="Route deleted successfully", status=200)
         except Exception as e:
             db.session.rollback()
@@ -105,3 +118,6 @@ class RouteResource(Resource):
 def register_resources(api):
     api.add_resource(RouteListResource, "/routes")
     api.add_resource(RouteResource, "/routes/<int:route_id>")
+    
+    api.add_resource(MatatuListResource, "/matatus")
+    api.add_resource(MatatuResource, "/matatus/<int:matatu_id>")

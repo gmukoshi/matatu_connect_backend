@@ -18,7 +18,7 @@ class Route(db.Model):
     # A route can have many Matatus assigned to it
     matatus = db.relationship('Matatu', backref='route', lazy=True)
     # A route has many Bookings
-    bookings = db.relationship('Booking', backref='route', lazy=True)
+    #bookings = db.relationship('Booking', backref='route', lazy=True)
 
     def to_dict(self):
         return {
