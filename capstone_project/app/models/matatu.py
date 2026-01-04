@@ -14,3 +14,11 @@ class Matatu(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+    def to_dict(self):
+        return{
+            "id":self.id,
+            "plate_number":self.plate_number,
+            "capacity":self.capacity,
+            "driver_id":self.driver_id
+
+        }
