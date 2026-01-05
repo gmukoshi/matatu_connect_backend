@@ -40,12 +40,14 @@ def create_app():
     from app.resources.user import user_bp
     from app.resources.matatu import matatu_bp
     from app.resources.route import route_bp
+    from app.resources.dashboard import dashboard_bp
 
     # All auth routes will now start with /api/auth
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/users')
     app.register_blueprint(matatu_bp, url_prefix='/api/matatus')
     app.register_blueprint(route_bp, url_prefix='/api/routes')
+    app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard")
 
      # Register socket events
     from app.sockets import events
