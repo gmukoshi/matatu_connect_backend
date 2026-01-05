@@ -1,7 +1,7 @@
-from app import create_app  # Make sure app/__init__.py has create_app
+from capstone_project import create_app
+from capstone_project.app.extensions import socketio
 
 app = create_app()
 
 if __name__ == "__main__":
-    # Run app manually for development
-    app.run(debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)

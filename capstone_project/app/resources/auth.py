@@ -1,14 +1,19 @@
 from flask import Blueprint, request
 from flask_jwt_extended import create_access_token, create_refresh_token
-from app.extensions import db
-from app.models.user import User
+from ..extensions import db
+from ..models.user import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    data = request.json
+    data = request.json(silent=True) or{}#brian added added line 11 to line 15
+    email=data.get("email")
+    password=data.get("password")
+    if not email or not password:
+        return{"error":"email and password are required"},400
+    
 
     user = User(
         email=data["email"],

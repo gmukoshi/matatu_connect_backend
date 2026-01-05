@@ -5,41 +5,49 @@ __pycache__/
 *.pyd
 *.egg-info/
 .eggs/
+
 # Virtual environments
 venv/
 env/
-.capstone_project/
-capstone_project/
 .venv/
+
 # Environment variables
 .env
 .env.*
 !.env.example
+
 # Flask / Application
 instance/
 *.log
 flask_session/
+
 # Database
 *.sqlite3
 *.db
+
 # Keep migrations folder, ignore cache
 migrations/__pycache__/
 migrations/versions/__pycache__/
+
 # Node / Frontend
 node_modules/
 dist/
 build/
+
 # IDE / Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+
 # OS files
 .DS_Store
 Thumbs.db
+
 # Testing / Coverage
 .pytest_cache/
 .coverage
 htmlcov/
+
 # SocketIO / Eventlet temp
 *.pid
