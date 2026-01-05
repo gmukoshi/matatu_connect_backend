@@ -1,5 +1,5 @@
-from capstone_project import create_app
-from capstone_project.app.extensions import socketio
+from app import create_app
+from app.extensions import socketio
 
 app = create_app()
 
