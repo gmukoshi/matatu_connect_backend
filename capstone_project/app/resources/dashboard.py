@@ -1,65 +1,59 @@
-from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import Blueprint
+from flask_restful import Resource, Api
+from datetime import date
 from sqlalchemy import func
 
-from app.extensions import db
-from app.models.booking import Booking
-from app.models.payment import Payment
-from app.models.user import User
+# Utility imports
 from app.utils.responses import success_response, error_response
+from app.extensions import db
 
-dashboard_bp = Blueprint("dashboard", __name__)
+# Model imports
+from app.models.matatu import Matatu
+from app.models.booking import Booking
+from app.models.route import Route
+from app.models.user import User
 
+# Define Blueprint
+dashboard_bp = Blueprint('dashboard_bp', __name__)
+api = Api(dashboard_bp)
 
-@dashboard_bp.route("/summary", methods=["GET"])
-@jwt_required()
-def sacco_dashboard_summary():
-    """
-    Sacco Admin Dashboard Summary
-    Returns:
-    - Total Revenue
-    - Total Bookings
-    """
+class DashboardStats(Resource):
+    def get(self):
+        try:
+            # 1. Count Total Bookings
+            total_bookings = Booking.query.count()
 
-    current_user_id = get_jwt_identity()
+            # 2. Count Active Matatus (Assuming all in DB are active, or filter by status)
+            active_matatus = Matatu.query.count()
 
-    user = User.query.get(current_user_id)
+            # 3. Calculate Revenue for Today
+            # Sums the 'amount' column for bookings created today
+            revenue_today = db.session.query(func.sum(Booking.amount))\
+                .filter(func.date(Booking.created_at) == date.today())\
+                .scalar() or 0.0
 
-    if not user:
-        return error_response("User not found", 404)
+            # 4. Count Total Registered Commuters
+            total_users = User.query.filter_by(role='passenger').count()
 
-    if user.role != "sacco_admin":
-        return error_response("Access denied", 403)
+            stats = {
+                "total_bookings": total_bookings,
+                "active_matatus": active_matatus,
+                "revenue_today": float(revenue_today),
+                "total_users": total_users,
+                "system_health": "Optimal"
+            }
 
-    sacco_id = user.sacco_id
+            return success_response(
+                data=stats, 
+                message="Real-time dashboard stats synchronized"
+            )
+            
+        except Exception as e:
+            return error_response(
+                message="Failed to load dashboard statistics", 
+                error=str(e), 
+                status_code=500
+            )
 
-    # ---------------------------
-    # Total Bookings
-    # ---------------------------
-    total_bookings = (
-        db.session.query(func.count(Booking.id))
-        .filter(
-            Booking.sacco_id == sacco_id,
-            Booking.status == "completed"
-        )
-        .scalar()
-    )
-
-    # ---------------------------
-    # Total Revenue
-    # ---------------------------
-    total_revenue = (
-        db.session.query(func.coalesce(func.sum(Payment.amount), 0))
-        .filter(
-            Payment.sacco_id == sacco_id,
-            Payment.status == "paid"
-        )
-        .scalar()
-    )
-
-    data = {
-        "total_revenue": float(total_revenue),
-        "total_bookings": total_bookings
-    }
-
-    return success_response(data, "Dashboard summary fetched successfully")
+# Register resource
+api.add_resource(DashboardStats, '/stats')

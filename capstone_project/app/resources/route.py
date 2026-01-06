@@ -1,123 +1,105 @@
-from flask import request
-from flask_restful import Resource
+from flask import request, Blueprint
+from flask_restful import Resource, Api
 from ..models.route import Route
 from ..extensions import db
 from ..utils.responses import make_response
-from app.sockets.events import broadcast_route_update
-from .matatu import MatatuListResource, MatatuResource
+
+# 1. Define the Blueprint and the API object
+route_bp = Blueprint('route_bp', __name__)
+api = Api(route_bp)
+
 class RouteListResource(Resource):
     def get(self):
+        """Fetch all available transit routes"""
         try:
             routes = Route.query.all()
-            data = [route.to_dict() for route in routes]
-            return make_response(data=data, message="Routes fetched successfully", status=200)
+            data = [r.to_dict() for r in routes]
+            return make_response(
+                data=data, 
+                message="Routes fetched successfully", 
+                status_code=200
+            )
         except Exception as e:
-            return make_response(message="Error fetching routes", error=str(e), status=500)
+            return make_response(message="Error fetching routes", error=str(e), status_code=500)
 
     def post(self):
+        """Create a new route (e.g., Nairobi to Thika)"""
         data = request.get_json() or {}
-
-        required = ("origin", "destination", "fare")
-        if not all(k in data for k in required):
+        
+        # Validation
+        if not data.get("name") or not data.get("destination"):
             return make_response(
-                message="Validation Error",
-                error="Missing fields: origin, destination, fare",
-                status=400
+                message="Validation Error", 
+                error="Name and destination are required", 
+                status_code=400
             )
 
-        existing_route = Route.query.filter_by(
-            origin=data["origin"],
-            destination=data["destination"]
-        ).first()
-
-        if existing_route:
-            return make_response(message="Conflict", error="Route already exists", status=409)
-
         new_route = Route(
-            origin=data["origin"],
+            name=data["name"],
+            origin=data.get("origin", "CBD"), # Default to CBD if not provided
             destination=data["destination"],
-            fare=data["fare"],
-            distance=data.get("distance"),
-            estimated_duration=data.get("estimated_duration")
+            base_fare=data.get("base_fare", 0.0)
         )
-
+        
         try:
             db.session.add(new_route)
             db.session.commit()
-            broadcast_route_update(new_route.id, {
-                "type": "created",
-                "route": new_route.to_dict()
-            })
             return make_response(
-                message="Route created successfully",
-                data=new_route.to_dict(),
-                status=201
+                message="Route created successfully", 
+                data=new_route.to_dict(), 
+                status_code=201
             )
         except Exception as e:
             db.session.rollback()
-            return make_response(message="Database Error", error=str(e), status=500)
-
+            return make_response(message="Database error", error=str(e), status_code=500)
 
 class RouteResource(Resource):
     def get(self, route_id):
+        """Get details for a specific route"""
         route = Route.query.get(route_id)
         if not route:
-            return make_response(message="Not found", error="Route not found", status=404)
-
-        return make_response(message="Route fetched successfully", data=route.to_dict(), status=200)
+            return make_response(message="Route not found", status_code=404)
+        return make_response(data=route.to_dict(), status_code=200)
 
     def patch(self, route_id):
+        """Update route details like fare or destination name"""
         route = Route.query.get(route_id)
         if not route:
-            return make_response(message="Not found", error="Route not found", status=404)
+            return make_response(message="Route not found", status_code=404)
 
-        body = request.get_json() or {}
-
-        allowed_fields = {"origin", "destination", "fare", "distance", "estimated_duration"}
-        updates = {k: v for k, v in body.items() if k in allowed_fields}
-
-        if not updates:
-            return make_response(
-                message="Validation Error",
-                error="No valid fields to update",
-                status=400
-            )
-
-        for key, value in updates.items():
-            setattr(route, key, value)
-
+        data = request.get_json() or {}
+        
+        # Update allowed fields
+        for field in ['name', 'origin', 'destination', 'base_fare']:
+            if field in data:
+                setattr(route, field, data[field])
+        
         try:
             db.session.commit()
-            broadcast_route_update(route.id, {
-                "type": "updated",
-                "route": route.to_dict()
-            })
-            return make_response(message="Route updated successfully", data=route.to_dict(), status=200)
+            return make_response(
+                message="Route updated successfully", 
+                data=route.to_dict(), 
+                status_code=200
+            )
         except Exception as e:
             db.session.rollback()
-            return make_response(message="Database Error", error=str(e), status=500)
+            return make_response(message="Update failed", error=str(e), status_code=500)
 
     def delete(self, route_id):
+        """Remove a route from the system"""
         route = Route.query.get(route_id)
         if not route:
-            return make_response(message="Not found", error="Route not found", status=404)
+            return make_response(message="Route not found", status_code=404)
 
         try:
             db.session.delete(route)
             db.session.commit()
-            broadcast_route_update(route.id, {
-                "type": "updated",
-                "route": route.to_dict()
-            })
-            return make_response(message="Route deleted successfully", status=200)
+            return make_response(message="Route deleted successfully", status_code=200)
         except Exception as e:
             db.session.rollback()
-            return make_response(message="Database Error", error=str(e), status=500)
+            return make_response(message="Deletion failed", error=str(e), status_code=500)
 
-
-def register_resources(api):
-    api.add_resource(RouteListResource, "/routes")
-    api.add_resource(RouteResource, "/routes/<int:route_id>")
-    
-    api.add_resource(MatatuListResource, "/matatus")
-    api.add_resource(MatatuResource, "/matatus/<int:matatu_id>")
+# 2. Map the resources to specific URLs
+# Note: These paths are relative to the blueprint prefix (/api/routes)
+api.add_resource(RouteListResource, '/')
+api.add_resource(RouteResource, '/<int:route_id>')
