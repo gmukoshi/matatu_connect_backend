@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from flask import Blueprint, jsonify
 from app.models.user import User
 from app.services.auth_service import admin_required, sacco_manager_required
@@ -18,7 +17,7 @@ def get_all_users():
 def get_sacco_drivers():
     drivers = User.query.filter_by(role=User.ROLE_DRIVER).all()
     return jsonify([d.to_dict() for d in drivers]), 200
-=======
+
 from flask import request
 from flask_restful import Resource
 from ..models.user import User
@@ -81,4 +80,4 @@ class RegisterResource(Resource):
         except Exception as e:
             db.session.rollback()
             return make_response(message="Database Error", error=str(e), status=500)
->>>>>>> 234ac08 (moved the init that initializes the app to be a stand alone file,  changed the locations for all the the imports of the connecting to the init since I had changed the location, created a route id column for the foreign key on he route table.)
+
