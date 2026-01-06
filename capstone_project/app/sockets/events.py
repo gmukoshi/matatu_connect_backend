@@ -1,9 +1,9 @@
 # app/sockets/events.py
 from flask_socketio import emit, join_room, leave_room
-from flask_jwt_extended import decode_token
-from app.extensions import socketio, db
-from app.utils.validators import validate_gps_coordinates
 from datetime import datetime
+
+from app.extensions import socketio, db
+from app.utils.validators import validate_coordinates
 from app.models.matatu import Matatu
 
 # ===============================
@@ -17,7 +17,7 @@ def handle_connect():
 
 @socketio.on("disconnect")
 def handle_disconnect():
-    print("🔴Client disconnected")
+    print("🔴 Client disconnected")
 
 
 # ----------------------------------
@@ -29,8 +29,10 @@ def join_route(data):
     data = { "route_id": 3 }
     """
     route_id = data.get("route_id")
-    room = f"route_{route_id}"
+    if not route_id:
+        return
 
+    room = f"route_{route_id}"
     join_room(room)
 
     emit(
@@ -49,8 +51,10 @@ def join_matatu(data):
     data = { "matatu_id": 12 }
     """
     matatu_id = data.get("matatu_id")
-    room = f"matatu_{matatu_id}"
+    if not matatu_id:
+        return
 
+    room = f"matatu_{matatu_id}"
     join_room(room)
 
     emit(
@@ -77,12 +81,16 @@ def handle_location_update(data):
 
     matatu_id = data.get("matatu_id")
     route_id = data.get("route_id")
-
     latitude = data.get("latitude")
     longitude = data.get("longitude")
     speed = data.get("speed", 0)
 
     if not all([matatu_id, route_id, latitude, longitude]):
+        emit("error", {"message": "Missing GPS data"})
+        return
+
+    if not validate_coordinates(latitude, longitude):
+        emit("error", {"message": "Invalid GPS coordinates"})
         return
 
     # ----------------------------
@@ -120,4 +128,15 @@ def handle_location_update(data):
         "matatu_location_update",
         payload,
         room=f"matatu_{matatu_id}"
+    )
+
+
+# ----------------------------------
+# ROUTE BROADCAST HELPER
+# ----------------------------------
+def broadcast_route_update(route_id, payload):
+    socketio.emit(
+        "route_update",
+        payload,
+        room=f"route_{route_id}"
     )
