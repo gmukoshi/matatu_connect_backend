@@ -3,7 +3,7 @@ from flask_restful import Resource
 from ..models.route import Route
 from ..extensions import db
 from ..utils.responses import make_response
-from ..realtime import broadcast_route_update
+from app.sockets.events import broadcast_route_update
 from .matatu import MatatuListResource, MatatuResource
 class RouteListResource(Resource):
     def get(self):
