@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from flask_cors import CORS
-from .extensions import db, jwt, migrate,socket.io
+from .extensions import db, jwt, migrate,socketio
 from .utils.errors import (
     handle_404_error, 
     handle_500_error, 
