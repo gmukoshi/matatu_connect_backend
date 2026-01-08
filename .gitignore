@@ -5,6 +5,8 @@ __pycache__/
 *.pyd
 *.egg-info/
 .eggs/
+ bin/
+ lib/
 
 # Virtual environments
 venv/
@@ -51,3 +53,5 @@ htmlcov/
 
 # SocketIO / Eventlet temp
 *.pid
+
+
