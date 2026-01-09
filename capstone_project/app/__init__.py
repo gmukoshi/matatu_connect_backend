@@ -33,9 +33,10 @@ def create_app():
     # Add your actual Render frontend URL to this list once deployed
     allowed_origins = [
         "http://localhost:5173",
+        "http://localhost:3000",
         "https://your-frontend-name.onrender.com" 
     ]
-    CORS(app, resources={r"/api/*": {"origins": allowed_origins}}, supports_credentials=True)
+    CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
 
     # 4. Initialize Extensions
     db.init_app(app)
