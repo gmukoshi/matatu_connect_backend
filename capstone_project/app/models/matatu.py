@@ -29,6 +29,7 @@ class Matatu(db.Model):
             "id": self.id,
             "plate_number": self.plate_number,
             "capacity": self.capacity,
+            "driver_id": self.driver_id,
             "driver": self.driver.name if self.driver else "No Driver Assigned",
             "route_id": self.route_id,
             "latitude": self.latitude,

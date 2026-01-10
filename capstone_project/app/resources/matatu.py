@@ -25,7 +25,8 @@ class MatatuListResource(Resource):
             plate_number=data["plate_number"],
             capacity=data.get("capacity", 14),
             route_id=data.get("route_id"),
-            sacco_id=data["sacco_id"]
+            sacco_id=data["sacco_id"],
+            driver_id=data.get("driver_id")
         )
         try:
             db.session.add(new_matatu)
@@ -52,6 +53,8 @@ class MatatuResource(Resource):
             matatu.capacity = data["capacity"]
         if "route_id" in data:
             matatu.route_id = data["route_id"]
+        if "driver_id" in data:
+            matatu.driver_id = data["driver_id"]
 
         db.session.commit()
         return success_response(data=matatu.to_dict(), message="Matatu updated")

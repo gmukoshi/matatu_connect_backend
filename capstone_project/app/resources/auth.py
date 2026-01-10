@@ -37,9 +37,13 @@ def register():
 def login():
     data = request.get_json()
     if not data or "email" not in data or "password" not in data:
-        return {"error": "Missing email or password"}, 400
+        # Note: Frontend sends 'email' key even if value is username
+        return {"error": "Missing credentials"}, 400
 
-    user = User.query.filter_by(email=data["email"]).first()
+    # Allow login by email OR name (username/sacco name)
+    login_identifier = data["email"]
+    user = User.query.filter((User.email == login_identifier) | (User.name == login_identifier)).first()
+    
     if not user or not user.check_password(data["password"]):
         return {"error": "Invalid credentials"}, 401
 
