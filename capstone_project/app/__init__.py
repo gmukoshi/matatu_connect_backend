@@ -34,7 +34,7 @@ def create_app():
     allowed_origins = [
         "http://localhost:5173",
         "http://localhost:3000",
-        "http://127.0.0.1:5555"
+        "http://127.0.0.1:5555",
         "https://your-frontend-name.onrender.com" 
     ]
     CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
