@@ -37,14 +37,14 @@ class UserListResource(Resource):
 class UserResource(Resource):
     # Optional: public profile or admin fetch
     def get(self, user_id):
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             return make_response(message="Not found", error="User not found", status=404)
         return make_response(message="User fetched successfully", data=user.to_dict(), status=200)
 
     # Optional: admin delete
     def delete(self, user_id):
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             return make_response(message="Not found", error="User not found", status=404)
 
