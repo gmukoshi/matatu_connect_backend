@@ -1,4 +1,4 @@
-from flask import request, Blueprint
+from flask import request, Blueprint, abort
 from flask_restful import Resource, Api
 from ..models.matatu import Matatu
 from ..extensions import db
@@ -37,11 +37,15 @@ class MatatuListResource(Resource):
 
 class MatatuResource(Resource):
     def get(self, matatu_id):
-        matatu = Matatu.query.get_or_404(matatu_id)
+        matatu = db.session.get(Matatu, matatu_id)
+        if not matatu:
+            abort(404)
         return success_response(data=matatu.to_dict())
 
     def patch(self, matatu_id):
-        matatu = Matatu.query.get_or_404(matatu_id)
+        matatu = db.session.get(Matatu, matatu_id)
+        if not matatu:
+            abort(404)
         data = request.get_json() or {}
 
         if "capacity" in data:
@@ -53,7 +57,9 @@ class MatatuResource(Resource):
         return success_response(data=matatu.to_dict(), message="Matatu updated")
 
     def delete(self, matatu_id):
-        matatu = Matatu.query.get_or_404(matatu_id)
+        matatu = db.session.get(Matatu, matatu_id)
+        if not matatu:
+            abort(404)
         db.session.delete(matatu)
         db.session.commit()
         return success_response(data=None, message="Matatu deleted")

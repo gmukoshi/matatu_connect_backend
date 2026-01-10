@@ -11,6 +11,7 @@ from app.extensions import db
 from app.models.matatu import Matatu
 from app.models.booking import Booking
 from app.models.route import Route
+from app.models.payment import Payment
 from app.models.user import User
 
 # Define Blueprint
@@ -27,9 +28,10 @@ class DashboardStats(Resource):
             active_matatus = Matatu.query.count()
 
             # 3. Calculate Revenue for Today
-            # Sums the 'amount' column for bookings created today
-            revenue_today = db.session.query(func.sum(Booking.amount))\
-                .filter(func.date(Booking.created_at) == date.today())\
+            # Sums the 'amount' column for payments created today
+            revenue_today = db.session.query(func.sum(Payment.amount))\
+                .filter(func.date(Payment.created_at) == date.today())\
+                .filter(Payment.status == 'completed')\
                 .scalar() or 0.0
 
             # 4. Count Total Registered Commuters
