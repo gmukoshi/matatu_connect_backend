@@ -31,11 +31,12 @@ def create_app():
 
     # 3. CORS - Allow your deployed frontend and local dev
     # Add your actual Render frontend URL to this list once deployed
+    # 3. CORS - Allow your deployed frontend and any localhost port for dev
+    # Add your actual Render frontend URL to this list once deployed
     allowed_origins = [
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5555",
-        "https://your-frontend-name.onrender.com" 
+        "https://your-frontend-name.onrender.com",
+        r"https?://localhost:\d+",
+        r"https?://127\.0\.0\.1:\d+"
     ]
     CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
 
