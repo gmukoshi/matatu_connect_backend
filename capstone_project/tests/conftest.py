@@ -1,0 +1,22 @@
+import pytest
+from app import create_app, db
+
+@pytest.fixture
+def app():
+    # Use the testing configuration
+    app = create_app()
+    app.config.from_object("app.config.TestingConfig")
+    
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+@pytest.fixture
+def runner(app):
+    return app.test_cli_runner()

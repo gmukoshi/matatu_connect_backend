@@ -59,9 +59,16 @@ class ProductionConfig(Config):
     # In production, ensure the DATABASE_URL uses 'postgresql://' instead of 'postgres://'
     # (Heroku and some providers often use the 'postgres' prefix which SQLAlchemy 1.4+ dislikes)
 
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    WTF_CSRF_ENABLED = False
+    DEBUG = True
+
 # Helper to map environment names to classes
 config_dict = {
     "development": DevelopmentConfig,
     "production": ProductionConfig,
+    "testing": TestingConfig,
     "default": DevelopmentConfig
 }

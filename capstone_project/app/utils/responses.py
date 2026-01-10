@@ -12,11 +12,11 @@ def error_response(message="An error occurred", error=None, status_code=400):
     """
     Standard format for error API responses.
     """
-    return jsonify({
+    return {
         "status": "error",
         "message": message,
         "error": error
-    }), status_code
+    }, status_code
 
 def make_response(data=None, message="Success", error=None, status_code=200):
     """
