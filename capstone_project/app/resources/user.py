@@ -19,10 +19,12 @@ def get_sacco_drivers():
     return jsonify([d.to_dict() for d in drivers]), 200
 
 from flask import request
-from flask_restful import Resource
+from flask_restful import Resource, Api
 from ..models.user import User
 from ..extensions import db
 from ..utils.responses import make_response
+
+api = Api(user_bp)
 
 class UserListResource(Resource):
     # Optional: admin only
@@ -81,3 +83,34 @@ class RegisterResource(Resource):
             db.session.rollback()
             return make_response(message="Database Error", error=str(e), status=500)
 
+class DriverInviteResource(Resource):
+    @sacco_manager_required
+    def post(self):
+        data = request.get_json()
+        email = data.get("email")
+        
+        if not email:
+            return make_response(message="Bad Request", error="Email is required", status=400)
+            
+        user = User.query.filter_by(email=email).first()
+        if not user:
+             return make_response(message="Not Found", error="Driver not found with that email", status=404)
+        
+        if user.role != User.ROLE_DRIVER:
+             return make_response(message="Invalid Role", error="User is not a driver", status=400)
+             
+        # In a real app, get sacco_id from logged-in manager
+        # For this demo, assuming manager manages sacco_id=1
+        user.sacco_id = 1 
+        
+        try:
+            db.session.commit()
+            return make_response(message="Driver added to Sacco successfully", data=user.to_dict(), status=200)
+        except Exception as e:
+            db.session.rollback()
+            return make_response(message="Database Error", error=str(e), status=500)
+
+api.add_resource(UserListResource, '/')
+api.add_resource(UserResource, '/<int:user_id>')
+api.add_resource(RegisterResource, '/register')
+api.add_resource(DriverInviteResource, '/manager/invite')

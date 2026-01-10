@@ -8,15 +8,29 @@ from ..utils.responses import success_response, error_response
 booking_bp = Blueprint('booking_bp', __name__)
 api = Api(booking_bp)
 
+from ..models.matatu import Matatu
+
 class BookingListResource(Resource):
     @jwt_required()
     def get(self):
-        """Commuters see their own, Admins see all"""
+        """Commuters see their own, Admins see all, Drivers see their bus's"""
         user_info = get_jwt_identity()
-        if user_info['role'] == 'admin':
+        role = user_info.get('role')
+        user_id = user_info['id']
+
+        if role == 'admin':
             bookings = Booking.query.all()
+        elif role == 'driver':
+            # Find the matatu assigned to this driver
+            matatu = Matatu.query.filter_by(driver_id=user_id).first()
+            if not matatu:
+                return success_response(data=[], message="No vehicle assigned")
+            
+            # Find bookings for this matatu
+            bookings = Booking.query.filter_by(matatu_id=matatu.id).all()
         else:
-            bookings = Booking.query.filter_by(user_id=user_info['id']).all()
+            # Commuter (or default)
+            bookings = Booking.query.filter_by(user_id=user_id).all()
         
         return success_response(data=[b.to_dict() for b in bookings], message="Bookings retrieved")
 

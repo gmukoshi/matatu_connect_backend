@@ -19,6 +19,8 @@ class User(db.Model):
         nullable=False,
         default=ROLE_COMMUTER
     )
+    # Link drivers/managers to a Sacco
+    sacco_id = db.Column(db.Integer, nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -32,5 +34,6 @@ class User(db.Model):
             "id": self.id,
             "name": self.name,
             "email": self.email,
-            "role": self.role
+            "role": self.role,
+            "sacco_id": self.sacco_id
         }

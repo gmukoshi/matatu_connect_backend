@@ -16,6 +16,8 @@ class Matatu(db.Model):
     longitude = db.Column(db.Float, index=True)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    assignment_status = db.Column(db.String(20), default="pending") # pending, active, rejected
+
     # Relationships
     driver = db.relationship("User", backref=db.backref("matatus", lazy=True))
     route = db.relationship("Route", backref=db.backref("matatus", lazy=True))
@@ -31,6 +33,7 @@ class Matatu(db.Model):
             "capacity": self.capacity,
             "driver_id": self.driver_id,
             "driver": self.driver.name if self.driver else "No Driver Assigned",
+            "assignment_status": self.assignment_status,
             "route_id": self.route_id,
             "latitude": self.latitude,
             "longitude": self.longitude,
