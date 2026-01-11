@@ -1,11 +1,11 @@
 import pytest
 from app import create_app, db
+from app.config import TestingConfig
 
 @pytest.fixture
 def app():
     # Use the testing configuration
-    app = create_app()
-    app.config.from_object("app.config.TestingConfig")
+    app = create_app(TestingConfig)
     
     with app.app_context():
         db.create_all()
