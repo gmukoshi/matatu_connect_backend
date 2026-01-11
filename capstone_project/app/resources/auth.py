@@ -3,7 +3,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 from ..extensions import db
 from ..models.user import User
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -37,9 +37,13 @@ def register():
 def login():
     data = request.get_json()
     if not data or "email" not in data or "password" not in data:
-        return {"error": "Missing email or password"}, 400
+        # Note: Frontend sends 'email' key even if value is username
+        return {"error": "Missing credentials"}, 400
 
-    user = User.query.filter_by(email=data["email"]).first()
+    # Allow login by email OR name (username/sacco name)
+    login_identifier = data["email"]
+    user = User.query.filter((User.email == login_identifier) | (User.name == login_identifier)).first()
+    
     if not user or not user.check_password(data["password"]):
         return {"error": "Invalid credentials"}, 401
 

@@ -25,7 +25,8 @@ class MatatuListResource(Resource):
             plate_number=data["plate_number"],
             capacity=data.get("capacity", 14),
             route_id=data.get("route_id"),
-            sacco_id=data["sacco_id"]
+            sacco_id=data["sacco_id"],
+            driver_id=data.get("driver_id")
         )
         try:
             db.session.add(new_matatu)
@@ -52,6 +53,9 @@ class MatatuResource(Resource):
             matatu.capacity = data["capacity"]
         if "route_id" in data:
             matatu.route_id = data["route_id"]
+        if "driver_id" in data:
+            matatu.driver_id = data["driver_id"]
+            matatu.assignment_status = "pending" # Reset status on new assignment
 
         db.session.commit()
         return success_response(data=matatu.to_dict(), message="Matatu updated")
@@ -64,5 +68,32 @@ class MatatuResource(Resource):
         db.session.commit()
         return success_response(data=None, message="Matatu deleted")
 
+class MatatuAcceptResource(Resource):
+    def post(self, matatu_id):
+        matatu = db.session.get(Matatu, matatu_id)
+        if not matatu:
+            return error_response("Matatu not found", 404)
+        
+        # In real app, check if current_user.id == matatu.driver_id
+
+        matatu.assignment_status = "active"
+        db.session.commit()
+        return success_response(data=matatu.to_dict(), message="Assignment accepted")
+
+class MatatuRejectResource(Resource):
+    def post(self, matatu_id):
+        matatu = db.session.get(Matatu, matatu_id)
+        if not matatu:
+            return error_response("Matatu not found", 404)
+
+        # In real app, check ownership
+        
+        matatu.assignment_status = "rejected"
+        matatu.driver_id = None # Unassign driver
+        db.session.commit()
+        return success_response(data=matatu.to_dict(), message="Assignment rejected")
+
 api.add_resource(MatatuListResource, '/')
 api.add_resource(MatatuResource, '/<int:matatu_id>')
+api.add_resource(MatatuAcceptResource, '/<int:matatu_id>/accept')
+api.add_resource(MatatuRejectResource, '/<int:matatu_id>/reject')
