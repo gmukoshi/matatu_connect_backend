@@ -23,6 +23,34 @@ def create_app(config_class=None):
 
     app = Flask(__name__, static_folder=frontend_dist, static_url_path='/')
     
+    # Configure JSON Logging
+    import logging
+    import json
+    from flask import request
+    
+    # Disable default Werkzeug logging (Standard Access Logs)
+    werkzeug_log = logging.getLogger('werkzeug')
+    werkzeug_log.setLevel(logging.ERROR) # Only log errors from werkzeug
+    werkzeug_log.disabled = True # Try completely disabling if setLevel isn't enough for dev server
+
+    @app.after_request
+    def log_request_info(response):
+        # Only log API requests to keep terminal clean ('api is being consumed')
+        if request.path.startswith('/api'):
+            log_data = {
+                "method": request.method,
+                "path": request.path,
+                "status": response.status_code,
+                "ip": request.remote_addr,
+            }
+            # Use app.logger to output the JSON
+            # We use print directly if app.logger formats it with extra text, 
+            # but app.logger is standard. Let's stick to app.logger but maybe format it content-only if needed.
+            # Using print + flush to ensure it's raw JSON line if that's what they strictly want
+            print(json.dumps(log_data), flush=True) 
+            
+        return response
+    
     # Load configuration
     if config_class is None:
         # Default to DevelopmentConfig if not specified
