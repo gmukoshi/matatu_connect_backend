@@ -13,7 +13,15 @@ from .utils.errors import (
 load_dotenv()
 
 def create_app():
-    app = Flask(__name__)
+    # Calculate path to frontend dist folder
+    # Assuming structure:
+    # backend/capstone_project/app/__init__.py
+    # frontend/dist
+    basedir = os.path.abspath(os.path.dirname(__file__)) # .../app
+    backend_root = os.path.dirname(os.path.dirname(basedir)) # .../matatu_connect_backend
+    frontend_dist = os.path.join(os.path.dirname(backend_root), 'matatu_connect_frontend', 'dist')
+
+    app = Flask(__name__, static_folder=frontend_dist, static_url_path='/')
     
     # 1. Database URL Fix for Render
     # Render provides 'postgres://', but SQLAlchemy 1.4+ needs 'postgresql://'
@@ -74,7 +82,14 @@ def create_app():
         from app.sockets import events
 
     @app.route('/')
+    def serve_frontend():
+        return app.send_static_file('index.html')
+
+    @app.route('/health')
     def health_check():
         return {"status": "success", "message": "Matatu Connect API Operational"}, 200
+
+    # Catch-all for React routing (explicit fallback for 404s handled in errors.py, 
+    # but this handles direct deep links if server supports it, though usually 404 handler is key)
 
     return app

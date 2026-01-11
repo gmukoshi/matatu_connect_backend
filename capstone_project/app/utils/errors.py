@@ -1,12 +1,23 @@
 from flask import jsonify
 
 def handle_404_error(e):
-    """Catch-all for routes that do not exist."""
-    return jsonify({
-        "error": "Not Found",
-        "message": "The requested URL was not found on the server.",
-        "status_code": 404
-    }), 404
+    """
+    Catch-all for routes that do not exist.
+    If the request accepts JSON, return JSON error.
+    Otherwise, serve the frontend index.html (SPA Fallback).
+    """
+    from flask import request, current_app
+    
+    # If request wants JSON (API call), return 404
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({
+            "error": "Not Found",
+            "message": "The requested URL was not found on the server.",
+            "status_code": 404
+        }), 404
+
+    # Otherwise, serve index.html for frontend routing
+    return current_app.send_static_file('index.html')
 
 def handle_500_error(e):
     """Catch-all for internal server errors/crashes."""
