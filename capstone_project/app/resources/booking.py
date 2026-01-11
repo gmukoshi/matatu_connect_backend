@@ -2,7 +2,7 @@ from flask import Blueprint, request
 from flask_restful import Api, Resource
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..models.booking import Booking
-from ..extensions import db
+from ..extensions import db, socketio
 from ..utils.responses import success_response, error_response
 
 booking_bp = Blueprint('booking_bp', __name__)
@@ -52,6 +52,10 @@ class BookingListResource(Resource):
         try:
             db.session.add(new_booking)
             db.session.commit()
+
+            # Emit socket event to the Driver (via Matatu room)
+            socketio.emit('new_booking', new_booking.to_dict(), room=f"matatu_{new_booking.matatu_id}")
+
             return success_response(data=new_booking.to_dict(), message="Booking created", status_code=201)
         except Exception as e:
             db.session.rollback()
@@ -84,6 +88,10 @@ class BookingActionResource(Resource):
             return error_response("Invalid action", 400)
 
         db.session.commit()
+
+        # Emit socket event to the Commuter (via User room)
+        socketio.emit('booking_status_update', booking.to_dict(), room=f"user_{booking.user_id}")
+
         return success_response(data=booking.to_dict(), message=f"Booking {action}ed")
 
 api.add_resource(BookingListResource, '/')

@@ -28,7 +28,18 @@ def register():
     try:
         db.session.add(user)
         db.session.commit()
-        return {"message": "User registered successfully", "user": user.to_dict()}, 201
+        
+        # Auto-login: Generate tokens
+        identity = {"id": user.id, "role": user.role}
+        access_token = create_access_token(identity=identity)
+        refresh_token = create_refresh_token(identity=identity)
+        
+        return {
+            "message": "User registered successfully",
+            "user": user.to_dict(),
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }, 201
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}, 500
