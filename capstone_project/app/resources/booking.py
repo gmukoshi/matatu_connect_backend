@@ -57,4 +57,34 @@ class BookingListResource(Resource):
             db.session.rollback()
             return error_response(str(e), 500)
 
+class BookingActionResource(Resource):
+    @jwt_required()
+    def post(self, booking_id, action):
+        user_info = get_jwt_identity()
+        user_id = user_info['id']
+        role = user_info.get('role')
+
+        booking = db.session.get(Booking, booking_id)
+        if not booking:
+            return error_response("Booking not found", 404)
+
+        # Authorization: Only the assigned driver (or admin) can accept/reject
+        if role == 'driver':
+             matatu = Matatu.query.filter_by(driver_id=user_id).first()
+             if not matatu or matatu.id != booking.matatu_id:
+                 return error_response("Unauthorized: You are not the driver of this vehicle", 403)
+        elif role != 'admin':
+             return error_response("Unauthorized", 403)
+
+        if action == 'accept':
+            booking.status = 'confirmed'
+        elif action == 'reject':
+            booking.status = 'rejected'
+        else:
+            return error_response("Invalid action", 400)
+
+        db.session.commit()
+        return success_response(data=booking.to_dict(), message=f"Booking {action}ed")
+
 api.add_resource(BookingListResource, '/')
+api.add_resource(BookingActionResource, '/<int:booking_id>/<string:action>')
