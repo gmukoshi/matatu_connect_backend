@@ -65,6 +65,28 @@ def join_matatu(data):
 
 
 # ----------------------------------
+# JOIN USER (COMMUTER / PERSONAL ALERTS)
+# ----------------------------------
+@socketio.on("join_user")
+def join_user(data):
+    """
+    data = { "user_id": 123 }
+    """
+    user_id = data.get("user_id")
+    if not user_id:
+        return
+
+    room = f"user_{user_id}"
+    join_room(room)
+    
+    emit(
+        "joined_user",
+        {"message": f"Joined personal room {user_id}"},
+        room=room
+    )
+
+
+# ----------------------------------
 # DRIVER GPS UPDATE
 # ----------------------------------
 @socketio.on("location_update")
