@@ -1,0 +1,7 @@
+--- M-Pesa Debug Start ---
+Traceback (most recent call last):
+  File "debug_mpesa.py", line 42, in <module>
+    test_mpesa_connection()
+  File "debug_mpesa.py", line 18, in test_mpesa_connection
+    print(f"Consumer Key: Length={len(key)}, HasWhitespace={any(c.isspace() for c in key)}")
+TypeError: object of type 'NoneType' has no len()

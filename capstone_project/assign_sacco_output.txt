@@ -1,0 +1,9 @@
+--- Assigning Manager Sacco ---
+Creating Sacco: Matatu Connect Sacco
+Assigning Manager Lily Maina (manager6@trail.com) to Sacco 1
+Assigning Manager Soniah Njeri (manager7@trail.com) to Sacco 1
+Assigning Manager Nancy Adelice (manager8@trial.com) to Sacco 1
+Assigning Manager manager 1 (manager1@trial.com) to Sacco 1
+Assigning Manager George Mukoshi (manager11@trial.com) to Sacco 1
+Successfully updated 5 managers.
+--- Assignment Complete ---

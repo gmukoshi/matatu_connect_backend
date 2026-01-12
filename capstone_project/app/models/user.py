@@ -21,6 +21,10 @@ class User(db.Model):
     )
     # Link drivers/managers to a Sacco
     sacco_id = db.Column(db.Integer, nullable=True)
+    
+    # Driver Specifics
+    license_number = db.Column(db.String(50), nullable=True)
+    verification_status = db.Column(db.String(20), default="approved") # pending, approved, rejected. Default approved for legacy/dev.
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -35,5 +39,7 @@ class User(db.Model):
             "name": self.name,
             "email": self.email,
             "role": self.role,
-            "sacco_id": self.sacco_id
+            "sacco_id": self.sacco_id,
+            "license_number": self.license_number,
+            "verification_status": self.verification_status
         }
