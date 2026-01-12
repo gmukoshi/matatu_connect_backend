@@ -94,5 +94,23 @@ class BookingActionResource(Resource):
 
         return success_response(data=booking.to_dict(), message=f"Booking {action}ed")
 
+class MatatuBookingsResource(Resource):
+    """Get all bookings for a specific matatu (for seat status visualization)"""
+    def get(self, matatu_id):
+        try:
+            matatu = db.session.get(Matatu, matatu_id)
+            if not matatu:
+                return error_response("Matatu not found", 404)
+            
+            # Get all bookings for this matatu (pending and confirmed)
+            bookings = Booking.query.filter_by(matatu_id=matatu_id).filter(
+                Booking.status.in_(['pending', 'confirmed'])
+            ).all()
+            
+            return success_response(data=[b.to_dict() for b in bookings], message="Matatu bookings retrieved")
+        except Exception as e:
+            return error_response(str(e), 500)
+
 api.add_resource(BookingListResource, '/')
 api.add_resource(BookingActionResource, '/<int:booking_id>/<string:action>')
+api.add_resource(MatatuBookingsResource, '/matatu/<int:matatu_id>')

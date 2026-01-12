@@ -1,0 +1,12 @@
+--- Driver Inspection Start ---
+Total Drivers Found: 7
+ID    Name                 Email                          SaccoID    Status    
+--------------------------------------------------------------------------------
+1     Sony Mwai            driver5@trail.com              None       None      
+2     Brenda Chebet        driver6@trial.com              None       None      
+6     Ariela Cherop        driver7@trail.com              None       None      
+8     Davis Too            driver07@trail.com             None       None      
+11    John Kamau           driver8@trial.com              None       None      
+15    driver 2             driver10@trial.com             None       None      
+18    Joseph Ondielo       driver11@trial.com             1          approved  
+--- Driver Inspection End ---

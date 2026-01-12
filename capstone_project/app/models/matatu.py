@@ -27,6 +27,16 @@ class Matatu(db.Model):
         db.session.commit()
 
     def to_dict(self):
+        route_data = None
+        if self.route:
+            route_dict = self.route.to_dict()
+            route_data = {
+                "id": route_dict["id"],
+                "name": route_dict["name"],  # This is computed in Route.to_dict()
+                "origin": route_dict["origin"],
+                "destination": route_dict["destination"]
+            }
+        
         return {
             "id": self.id,
             "plate_number": self.plate_number,
@@ -35,6 +45,7 @@ class Matatu(db.Model):
             "driver": self.driver.name if self.driver else "No Driver Assigned",
             "assignment_status": self.assignment_status,
             "route_id": self.route_id,
+            "route": route_data,
             "latitude": self.latitude,
             "longitude": self.longitude,
             "last_updated": self.last_updated.isoformat() if self.last_updated else None

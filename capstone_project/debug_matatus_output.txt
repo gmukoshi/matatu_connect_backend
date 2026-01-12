@@ -1,0 +1,10 @@
+--- Matatu Debug Start ---
+Total Matatus: 7
+ID: 3, Plate: KDM 123A, Status: pending, Driver: 1
+ID: 1, Plate: KDA 123A, Status: pending, Driver: 2
+ID: 4, Plate: KDR 123A, Status: pending, Driver: 1
+ID: 6, Plate: KDW 123W, Status: active, Driver: 15
+ID: 2, Plate: KDA 123B, Status: active, Driver: 6
+ID: 5, Plate: KDW 123A, Status: active, Driver: 11
+ID: 7, Plate: KDV 123A, Status: pending, Driver: 18
+--- Matatu Debug End ---

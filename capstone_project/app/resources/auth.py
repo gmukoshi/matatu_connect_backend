@@ -18,11 +18,18 @@ def register():
     if User.query.filter_by(email=email).first():
         return {"error": "Email already registered"}, 409
 
+    
+    # Handle specific fields for driver role
+    license_number = data.get("licence") if data.get("role") == "driver" else None
+    
     user = User(
         name=name,
         email=email,
-        role=data.get("role", "commuter")
+        role=data.get("role", "commuter"),
+        license_number=license_number,
+        verification_status="pending" if data.get("role") == "driver" else "approved"
     )
+
     user.set_password(password)
 
     try:

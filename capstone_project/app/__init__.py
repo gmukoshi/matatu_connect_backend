@@ -53,26 +53,15 @@ def create_app(config_class=None):
     
     # Load configuration
     if config_class is None:
-        # Default to DevelopmentConfig if not specified
-        # We need to import it effectively or just use the logic below
-        # For now, let's assume we want to use the env vars as before if no config supplied, 
-        # BUT we should really rely on config.py if possible.
-        # Given the existing code structure, I will preserve the manual env loading as the "default" 
-        # but allow config_class to override it completely.
+        # Default to DevelopmentConfig
+        from .config import DevelopmentConfig
+        app.config.from_object(DevelopmentConfig)
         
-        # 1. Database URL Fix for Render
-        # Render provides 'postgres://', but SQLAlchemy 1.4+ needs 'postgresql://'
+        # Override with any manual environment updates if needed (e.g. Render DB fix)
         database_url = os.getenv("DATABASE_URL")
         if database_url and database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-        # 2. Configurations (Default behavior)
-        app.config.update(
-            SQLALCHEMY_DATABASE_URI=database_url,
-            SQLALCHEMY_TRACK_MODIFICATIONS=False,
-            SECRET_KEY=os.getenv("SECRET_KEY", "dev-key-for-local-only"),
-            JWT_SECRET_KEY=os.getenv("JWT_SECRET_KEY", "jwt-dev-key")
-        )
+            app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     else:
         # Load the provided config class (e.g. TestingConfig)
         app.config.from_object(config_class)
@@ -116,6 +105,11 @@ def create_app(config_class=None):
     app.register_blueprint(booking_bp, url_prefix="/api/bookings")
     app.register_blueprint(payment_bp, url_prefix="/api/payments")
     app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard")
+    from app.resources.rating import rating_bp
+    from app.resources.log import log_bp
+
+    app.register_blueprint(rating_bp, url_prefix="/api/ratings")
+    app.register_blueprint(log_bp, url_prefix="/api/logs")
 
     # 7. Socket Events
     with app.app_context():

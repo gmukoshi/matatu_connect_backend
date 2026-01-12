@@ -1,5 +1,7 @@
 from flask import Blueprint
 from flask_restful import Resource, Api
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.services.auth_service import sacco_manager_required
 from datetime import date
 from sqlalchemy import func
 
@@ -13,6 +15,7 @@ from app.models.booking import Booking
 from app.models.route import Route
 from app.models.payment import Payment
 from app.models.user import User
+from app.models.log import MatatuLog
 
 # Define Blueprint
 dashboard_bp = Blueprint('dashboard_bp', __name__)
@@ -57,5 +60,91 @@ class DashboardStats(Resource):
                 status_code=500
             )
 
+class SaccoDashboardStats(Resource):
+    @sacco_manager_required
+    def get(self):
+        try:
+            user_info = get_jwt_identity()
+            # In a real app, you'd fetch the user obj if sacco_id isn't in JWT
+            # Assuming sacco_id is in JWT or we fetch User
+            user = db.session.get(User, user_info['id'])
+            if not user or not user.sacco_id:
+                return error_response("User is not assigned to a Sacco", status_code=400)
+            
+            sacco_id = user.sacco_id
+            
+            # Calculate Total Revenue for this Sacco
+            # Filter Payments -> Bookings -> Matatu -> Sacco
+            total_revenue = db.session.query(func.sum(Payment.amount))\
+                .join(Booking, Payment.booking_id == Booking.id)\
+                .join(Matatu, Booking.matatu_id == Matatu.id)\
+                .filter(Matatu.sacco_id == sacco_id)\
+                .filter(Payment.status == 'completed')\
+                .scalar() or 0.0
+
+            # Active Fleet (vehicles assigned and active)
+            active_fleet_count = Matatu.query.filter_by(sacco_id=sacco_id, assignment_status='active').count()
+            total_fleet_count = Matatu.query.filter_by(sacco_id=sacco_id).count()
+
+            # Daily Passengers (from logs today)
+            daily_passengers = db.session.query(func.sum(MatatuLog.passengers_carried))\
+                .join(Matatu, MatatuLog.matatu_id == Matatu.id)\
+                .filter(Matatu.sacco_id == sacco_id)\
+                .filter(MatatuLog.log_date == date.today())\
+                .scalar() or 0
+
+            # Fuel Efficiency (Total Mileage / Total Fuel) - Lifetime avg for simplicity or last 30 days
+            # Let's do lifetime for now
+            total_mileage = db.session.query(func.sum(MatatuLog.mileage_km))\
+                .join(Matatu, MatatuLog.matatu_id == Matatu.id)\
+                .filter(Matatu.sacco_id == sacco_id)\
+                .scalar() or 0.0
+            
+            total_fuel = db.session.query(func.sum(MatatuLog.fuel_liters))\
+                .join(Matatu, MatatuLog.matatu_id == Matatu.id)\
+                .filter(Matatu.sacco_id == sacco_id)\
+                .scalar() or 0.0
+
+            fuel_efficiency = round(total_mileage / total_fuel, 1) if total_fuel > 0 else 0.0
+            
+            # Total Drivers in Sacco
+            # Assuming User model refers to Sacco (sacco_id) or we look at Matatu.driver_id... 
+            # But the most accurate "Sacco Drivers" is Users with role 'driver' and sacco_id attached.
+            total_drivers = User.query.filter_by(sacco_id=sacco_id, role='driver').count()
+
+            # 7-Day Revenue Trend
+            from datetime import timedelta
+            revenue_trend = []
+            today = date.today()
+            for i in range(6, -1, -1):
+                day = today - timedelta(days=i)
+                day_revenue = db.session.query(func.sum(Payment.amount))\
+                    .join(Booking, Payment.booking_id == Booking.id)\
+                    .join(Matatu, Booking.matatu_id == Matatu.id)\
+                    .filter(Matatu.sacco_id == sacco_id)\
+                    .filter(func.date(Payment.created_at) == day)\
+                    .filter(Payment.status == 'completed')\
+                    .scalar() or 0.0
+                
+                revenue_trend.append({
+                    "name": day.strftime("%a"), # Mon, Tue...
+                    "revenue": float(day_revenue)
+                })
+
+            stats = {
+                "total_revenue": float(total_revenue),
+                "active_fleet": f"{active_fleet_count}/{total_fleet_count}",
+                "daily_passengers": int(daily_passengers),
+                "fuel_efficiency": f"{fuel_efficiency} km/L",
+                "total_drivers": total_drivers,
+                "revenue_trend": revenue_trend
+            }
+            
+            return success_response(data=stats, message="Sacco stats retrieved")
+
+        except Exception as e:
+            return error_response("Failed to load sacco stats", error=str(e), status_code=500)
+
 # Register resource
 api.add_resource(DashboardStats, '/stats')
+api.add_resource(SaccoDashboardStats, '/sacco-stats')

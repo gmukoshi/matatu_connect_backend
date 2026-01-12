@@ -30,5 +30,6 @@ class Booking(db.Model):
                 "plate": self.matatu.plate_number, # Fixed from registration_number
                 "route": self.matatu.route.origin + " - " + self.matatu.route.destination if self.matatu.route else "No Route"
             },
-            "payment_status": self.payment.status if self.payment else "Unpaid"
+            "payment_status": self.payment.status if self.payment else "Unpaid",
+            "payment_amount": self.payment.amount if self.payment else 0.0
         }

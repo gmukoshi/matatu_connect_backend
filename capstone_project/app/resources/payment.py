@@ -23,8 +23,10 @@ class MpesaHelper:
         
         try:
             res = requests.get(api_url, auth=HTTPBasicAuth(consumer_key, consumer_secret))
+            print(f"M-Pesa Token Error: {res.text}")
             return res.json().get('access_token')
         except Exception as e:
+            print(f"M-Pesa Token Exception: {e}")
             return None
 
     @staticmethod
@@ -32,6 +34,7 @@ class MpesaHelper:
         """Send the actual STK Push request"""
         access_token = MpesaHelper.get_access_token()
         if not access_token:
+            print("Failed to generate M-Pesa access token")
             raise Exception("Failed to generate M-Pesa access token")
 
         # Configuration from your app config
@@ -61,7 +64,9 @@ class MpesaHelper:
         }
 
         api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+        print(f"M-Pesa Request: {payload}")
         response = requests.post(api_url, json=payload, headers=headers)
+        print(f"M-Pesa Response: {response.text}")
         return response.json()
 
 class MpesaPaymentResource(Resource):

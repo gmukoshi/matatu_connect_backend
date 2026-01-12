@@ -1,0 +1,99 @@
+============================= test session starts ==============================
+platform linux -- Python 3.8.13, pytest-7.1.3, pluggy-1.5.0
+rootdir: /home/kp/Development/phase5/matatu_connect_backend/capstone_project
+plugins: Faker-19.6.2
+collected 1 item
+
+tests/test_sacco_earnings.py F                                           [100%]
+
+=================================== FAILURES ===================================
+_______________________ test_sacco_earnings_aggregation ________________________
+
+client = <FlaskClient <Flask 'app'>>
+
+    def test_sacco_earnings_aggregation(client):
+        # 1. Setup: Sacco Manager, Driver, Matatu
+        # Sacco ID = 99
+    
+        # Manager
+        res = client.post("/api/auth/register", json={
+            "email": "manager_rev@test.com", "password": "pass",
+            "name": "Manager Revenue", "role": "sacco_manager"
+        })
+        manager_token = res.json["access_token"]
+        manager_id = res.json["user"]["id"]
+    
+        # Assign Manager to Sacco 99 manually (since register doesn't do it)
+        manager = db.session.get(User, manager_id)
+        manager.sacco_id = 99
+        db.session.commit()
+    
+        # Driver (same sacco)
+        res = client.post("/api/auth/register", json={
+            "email": "driver_rev@test.com", "password": "pass",
+            "name": "Driver Rev", "role": "driver", "licence": "DL-REV"
+        })
+        driver_id = res.json["user"]["id"]
+    
+        # Matatu (same sacco)
+        matatu = Matatu(plate_number="REV 999K", capacity=14, driver_id=driver_id, sacco_id=99)
+        db.session.add(matatu)
+        db.session.commit()
+    
+        # Commuter
+        res = client.post("/api/auth/register", json={
+            "email": "commuter_rev@test.com", "password": "pass", "name": "Commuter Rev"
+        })
+        commuter_token = res.json["access_token"]
+        commuter_id = res.json["user"]["id"]
+    
+        # 2. Setup: Bookings & Payments
+        # Booking 1: Completed Payment (500)
+        b1 = Booking(user_id=commuter_id, matatu_id=matatu.id, seat_number="1A", status="confirmed")
+        db.session.add(b1)
+        db.session.commit()
+    
+>       p1 = Payment(booking_id=b1.id, amount=500.0, status='completed', transaction_id="MPESA001")
+
+tests/test_sacco_earnings.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:4: in __init__
+    ???
+/home/kp/.pyenv/versions/3.8.13/lib/python3.8/site-packages/sqlalchemy/orm/state.py:567: in _initialize_instance
+    manager.dispatch.init_failure(self, args, kwargs)
+/home/kp/.pyenv/versions/3.8.13/lib/python3.8/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/home/kp/.pyenv/versions/3.8.13/lib/python3.8/site-packages/sqlalchemy/orm/state.py:564: in _initialize_instance
+    manager.original_init(*mixed[1:], **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Payment (transient 127155584552192)>
+kwargs = {'amount': 500.0, 'booking_id': 1, 'status': 'completed', 'transaction_id': 'MPESA001'}
+cls_ = <class 'app.models.payment.Payment'>, k = 'transaction_id'
+
+    def _declarative_constructor(self: Any, **kwargs: Any) -> None:
+        """A simple constructor that allows initialization from kwargs.
+    
+        Sets attributes on the constructed instance using the names and
+        values in ``kwargs``.
+    
+        Only keys that are present as
+        attributes of the instance's class are allowed. These could be,
+        for example, any mapped columns or relationships.
+        """
+        cls_ = type(self)
+        for k in kwargs:
+            if not hasattr(cls_, k):
+>               raise TypeError(
+                    "%r is an invalid keyword argument for %s" % (k, cls_.__name__)
+                )
+E               TypeError: 'transaction_id' is an invalid keyword argument for Payment
+
+/home/kp/.pyenv/versions/3.8.13/lib/python3.8/site-packages/sqlalchemy/orm/decl_base.py:2142: TypeError
+----------------------------- Captured stdout call -----------------------------
+{"method": "POST", "path": "/api/auth/register", "status": 201, "ip": "127.0.0.1"}
+{"method": "POST", "path": "/api/auth/register", "status": 201, "ip": "127.0.0.1"}
+{"method": "POST", "path": "/api/auth/register", "status": 201, "ip": "127.0.0.1"}
+=========================== short test summary info ============================
+FAILED tests/test_sacco_earnings.py::test_sacco_earnings_aggregation - TypeEr...
+============================== 1 failed in 1.09s ===============================
