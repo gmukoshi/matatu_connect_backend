@@ -91,6 +91,9 @@ class BookingActionResource(Resource):
 
         # Emit socket event to the Commuter (via User room)
         socketio.emit('booking_status_update', booking.to_dict(), room=f"user_{booking.user_id}")
+        
+        # Emit to Matatu room (for Driver Dashboard & other Commuters viewing the vehicle)
+        socketio.emit('booking_updated', booking.to_dict(), room=f"matatu_{booking.matatu_id}")
 
         return success_response(data=booking.to_dict(), message=f"Booking {action}ed")
 

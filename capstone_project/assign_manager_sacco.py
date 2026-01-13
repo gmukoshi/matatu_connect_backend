@@ -20,7 +20,11 @@ def assign_manager_sacco():
         if not sacco:
             print(f"Creating Sacco: {sacco_name}")
             sacco = Sacco(name=sacco_name)
-            sacco.id = 1 # Force ID 1 to match our driver backfill
+            sacco.id = 1 
+            # Force ID 1 to match our driver backfill - REMOVED this line in assign_manager_sacco.py
+            # But the error is in seed_saccos.py.
+            # I will query max ID + 1 or better yet, sync the sequence.
+
             db.session.add(sacco)
             db.session.commit()
         else:

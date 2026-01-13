@@ -27,12 +27,27 @@ def register():
         email=email,
         role=data.get("role", "commuter"),
         license_number=license_number,
-        verification_status="pending" if data.get("role") == "driver" else "approved"
+        verification_status="pending" if data.get("role") == "driver" else "approved",
+        sacco_id=data.get("sacco_id") # Assign selected Sacco
     )
 
     user.set_password(password)
 
     try:
+        # Check if new Sacco creation is requested
+        sacco_name = data.get("sacco_name")
+        if not user.sacco_id and sacco_name and user.role == "sacco_manager":
+            from ..models.sacco import Sacco
+            # Check if name exists to prevent duplicates via name-entry
+            existing_sacco = Sacco.query.filter_by(name=sacco_name).first()
+            if existing_sacco:
+                user.sacco_id = existing_sacco.id
+            else:
+                new_sacco = Sacco(name=sacco_name)
+                db.session.add(new_sacco)
+                db.session.flush() # Get ID
+                user.sacco_id = new_sacco.id
+
         db.session.add(user)
         db.session.commit()
         

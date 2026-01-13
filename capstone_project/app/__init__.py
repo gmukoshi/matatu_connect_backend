@@ -110,6 +110,12 @@ def create_app(config_class=None):
 
     app.register_blueprint(rating_bp, url_prefix="/api/ratings")
     app.register_blueprint(log_bp, url_prefix="/api/logs")
+    
+    from app.resources.notification import notification_bp
+    app.register_blueprint(notification_bp, url_prefix="/api/notifications")
+    
+    from app.resources.sacco import sacco_bp
+    app.register_blueprint(sacco_bp, url_prefix="/api/saccos")
 
     # 7. Socket Events
     with app.app_context():
