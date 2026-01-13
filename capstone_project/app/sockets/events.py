@@ -86,6 +86,29 @@ def join_user(data):
     )
 
 
+
+# ----------------------------------
+# JOIN SACCO (MANAGERS)
+# ----------------------------------
+@socketio.on("join_sacco")
+def join_sacco(data):
+    """
+    data = { "sacco_id": 1 }
+    """
+    sacco_id = data.get("sacco_id")
+    if not sacco_id:
+        return
+
+    room = f"sacco_{sacco_id}"
+    join_room(room)
+    
+    emit(
+        "joined_sacco",
+        {"message": f"Joined sacco room {sacco_id}"},
+        room=room
+    )
+
+
 # ----------------------------------
 # DRIVER GPS UPDATE
 # ----------------------------------

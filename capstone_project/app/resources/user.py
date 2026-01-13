@@ -36,7 +36,7 @@ def get_sacco_drivers():
         
         if vehicle:
             d_dict['assigned_vehicle'] = vehicle.plate_number
-            d_dict['assigned_route'] = vehicle.route.name if vehicle.route else None
+            d_dict['assigned_route'] = f"{vehicle.route.origin} - {vehicle.route.destination}" if vehicle.route else None
         else:
             d_dict['assigned_vehicle'] = None
             d_dict['assigned_route'] = None
@@ -47,6 +47,7 @@ def get_sacco_drivers():
 
 from flask import request
 from flask_restful import Resource, Api
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..models.user import User
 from ..extensions import db
 from ..utils.responses import make_response
@@ -54,9 +55,27 @@ from ..utils.responses import make_response
 api = Api(user_bp)
 
 class UserListResource(Resource):
-    # Optional: admin only
+    @jwt_required()
     def get(self):
-        users = User.query.all()
+        current_identity = get_jwt_identity()
+        current_user = db.session.get(User, current_identity['id'])
+        
+        if not current_user:
+             return make_response(message="Unauthorized", status_code=401)
+
+        if current_user.role == User.ROLE_SACCO_MANAGER:
+            # Filter by Sacco
+            if not current_user.sacco_id:
+                return make_response(message="Users fetched successfully", data=[], status_code=200)
+            users = User.query.filter_by(sacco_id=current_user.sacco_id).all()
+            
+        elif current_user.role == User.ROLE_ADMIN:
+            users = User.query.all()
+            
+        else:
+            # Commuters/Drivers shouldn't list all users
+            return make_response(message="Forbidden", error="Access denied", status_code=403)
+
         return make_response(
             message="Users fetched successfully",
             data=[u.to_dict() for u in users],
@@ -228,9 +247,55 @@ class DriverActionResource(Resource):
             db.session.rollback()
             return make_response(message="Database Error", error=str(e), status_code=500)
 
+
+class DriverRouteAssignmentResource(Resource):
+    @sacco_manager_required
+    def post(self, user_id):
+        data = request.get_json() or {}
+        route_id = data.get('route_id')
+        
+        if not route_id:
+            return make_response(message="Bad Request", error="Route ID required", status_code=400)
+            
+        user = db.session.get(User, user_id)
+        if not user or user.role != User.ROLE_DRIVER:
+            return make_response(message="Not Found", error="Driver not found", status_code=404)
+            
+        # Find active vehicle for this driver
+        # Explicitly joining Matatu to check assignment
+        vehicle = next((m for m in user.matatus if m.assignment_status == 'active'), None)
+        
+        if not vehicle:
+            return make_response(message="Conflict", error="Driver has no active vehicle assigned. Assign vehicle first.", status_code=409)
+            
+        from ..models.route import Route
+        from ..models.notification import Notification
+        
+        route = db.session.get(Route, route_id)
+        if not route:
+            return make_response(message="Not Found", error="Route not found", status_code=404)
+            
+        # Assign Route
+        vehicle.route_id = route_id
+        
+        # Create Notification
+        manager_identity = get_jwt_identity()
+        # manager_name could be fetched, but simple message is fine
+        msg = f"You have been assigned to new route: {route.origin} - {route.destination}"
+        note = Notification(user_id=user.id, message=msg)
+        
+        try:
+            db.session.add(note)
+            db.session.commit()
+            return make_response(message="Route assigned successfully", status_code=200)
+        except Exception as e:
+            db.session.rollback()
+            return make_response(message="Database Error", error=str(e), status_code=500)
+
 api.add_resource(UserListResource, '/')
 api.add_resource(UserResource, '/<int:user_id>')
 api.add_resource(RegisterResource, '/register')
 api.add_resource(DriverInviteResource, '/manager/invite')
 api.add_resource(DriverSearchResource, '/manager/drivers/search')
 api.add_resource(DriverActionResource, '/manager/drivers/<int:user_id>/<string:action>')
+api.add_resource(DriverRouteAssignmentResource, '/manager/drivers/<int:user_id>/assign-route')
