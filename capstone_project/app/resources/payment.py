@@ -110,11 +110,29 @@ class MpesaPaymentResource(Resource):
             
             # Check if Safaricom accepted the request
             if stk_response.get('ResponseCode') == '0':
+                checkout_id = stk_response.get('CheckoutRequestID')
+                merchant_id = stk_response.get('MerchantRequestID')
+                
+                # Create Pending Payment Record
+                new_payment = Payment(
+                    booking_id=booking.id,
+                    user_id=booking.user_id,
+                    amount=float(amount),
+                    method='mpesa',
+                    status='pending',
+                    checkout_request_id=checkout_id,
+                    merchant_request_id=merchant_id
+                )
+                db.session.add(new_payment)
+                db.session.commit()
+                print(f"Created Pending Payment: {new_payment.id} | CheckoutID: {checkout_id}")
+
                 return success_response(
                     message="STK Push sent. Please enter your M-Pesa PIN.",
                     data={
-                        "CheckoutRequestID": stk_response.get('CheckoutRequestID'),
-                        "MerchantRequestID": stk_response.get('MerchantRequestID')
+                        "CheckoutRequestID": checkout_id,
+                        "MerchantRequestID": merchant_id,
+                        "payment_id": new_payment.id
                     }
                 )
             else:
@@ -137,6 +155,7 @@ class MpesaPaymentResource(Resource):
 
 from ..models.booking import Booking
 from ..models.payment import Payment
+from ..models.user import User
 from ..extensions import socketio
 
 class MpesaCallbackResource(Resource):
@@ -161,6 +180,7 @@ class MpesaCallbackResource(Resource):
 
             # Successful Transaction
             meta_data = stk_callback['CallbackMetadata']['Item']
+            log_debug("TRACE: Metadata extracted")
             
             # ... (unchanged lines) ...
             
@@ -171,136 +191,86 @@ class MpesaCallbackResource(Resource):
             receipt_number = next((item['Value'] for item in meta_data if item['Name'] == 'MpesaReceiptNumber'), None)
             phone_number_raw = next((item['Value'] for item in meta_data if item['Name'] == 'PhoneNumber'), None)
             phone_number = str(phone_number_raw) if phone_number_raw else None
+            log_debug(f"TRACE: Extracted Phone: {phone_number}, Amount: {amount}")
             
-            # We encoded booking_id in AccountReference e.g. "BK-123"
-            # However, Safaricom sometimes truncates or modifies AccountReference in the callback
-            # A more robust way might be to store CheckoutRequestID in a pending payment record, 
-            # but for this MVP we'll try to rely on finding the pending booking for this user/phone 
-            # OR trusting the AccountReference if it comes back intact.
-            
-            # Strategy: 
-            # 1. Try to parse booking ID from AccountReference in the callback (if present)
-            # 2. Or assume it matches the most recent pending booking for this phone number (simplified)
-            
-            # Let's try to pass booking ID via 'AccountReference' during the push.
-            # In trigger_stk_push we sent: "AccountReference": f"BK-{booking_id}"
-            
-            # NOTE: In Sandbox, Safaricom might not return AccountReference in CallbackMetadata for B2C/C2B, 
-            # but usually does for STK Push in the 'Item' list NOT always.
-            # Actually, STK Push callback contains: Amount, MpesaReceiptNumber, Balance, TransactionDate, PhoneNumber.
-            # It DOES NOT usually return AccountReference in the metadata. 
-            
-            # For a production app, we should have saved the CheckoutRequestID -> BookingID mapping in the DB when initiating.
-            # For this hackathon scope, we will find the Booking by extracting the ID from the `debug` logs or 
-            # we can't reliably link it without that mapping table.
-            
-            # WORKAROUND: Find the *latest pending booking* for the user associated with this phone number?
-            # Or better: Parsing the CheckoutRequestID if we had saved it.
-            
-            # Let's just find the booking with status 'pending' and the matching amount/phone if possible.
-            # Since we didn't save the phone in the booking, this is tricky.
-            
-            # BETTER APPROACH for MVP:
-            # We can't rely on phone number alone if users use different numbers.
-            # We will use the 'AccountReference' sent in the logs if we can't get it back.
-            # Wait, `MpesaHelper` didn't save `CheckoutRequestID` to DB.
-            
-            # FIX: We will update `MpesaPaymentResource` to save a `Payment` record with status `pending` 
-            # and `checkout_request_id` properly.
-            
-            # BUT since we can't change the schema heavily right now, let's try to assume 
-            # we find the booking by ID if possible?
-            
-            # Actually, let's assume the user has only 1 pending booking for simplicity?
-            # Or traverse all pending bookings and see if any matches logic?
-            # No, that's dangerous.
-            
-            # Let's look at what we have.
-            # We have separate Booking and Payment models. 
-            # Let's create the Payment record here associated with the matching booking.
-            
-            # Since we can't easily link back without the ID, 
-            # I will modify the `trigger_stk_push` to hopefully log or we assume the frontend is polling.
-            # But the user wants a receipt.
-            
-            # REALITY CHECK: Safaricom Sandbox STK Callback DOES NOT include the AccountReference.
-            # It DOES include the PhoneNumber.
-            
-            # Let's simple query: Find a Booking where status='pending' AND... we don't store phone.
-            
-            # Ok, for this fix to work robustly, we REALLY should have stored the `CheckoutRequestID`
-            # on the Booking or a PaymentIntent table.
-            
-            # Let's try to extract it from the cache or just hack it:
-            # We'll just update the Booking with id = (parsed from somewhere?)
-            # Since we can't, let's do this:
-            # The User initiates the request. We receive the callback.
-            # We accept that we might limit this to: "Match the most recent pending booking for any user? No."
-            
-            # Let's look at `User` model. Does it have phone?
-            # Try to get AccountReference for direct linking
-            account_ref = next((item['Value'] for item in meta_data if item['Name'] == 'MpesaReceiptNumber'), None) # Fallback
-            # Actually, AccountReference might not be in the Item list in some callbacks, but let's check
-            # For B2C it is not, for C2B/STK it differs. 
-            # In STK Push, the list usually has: Amount, MpesaReceiptNumber, Balance, TransactionDate, PhoneNumber
-            # It RARELY has AccountReference.
-            
-            # HOWEVER, we can stick to the phone number logic BUT fail gracefully or log better.
-            
-            # Let's try to find the User by phone first (existing logic)
-            raise Exception("DEBUG: FORCED CRASH AT LINE 250")
-            user = User.query.filter_by(phone_number=phone_number).first()
-            if user:
-                log_debug(f"User matched: {user.name} (ID: {user.id})")
-            else:
-                 # Try adding/removing country code
-                 if phone_number.startswith('254'):
-                     alt_phone = '0' + phone_number[3:]
-                     user = User.query.filter_by(phone_number=alt_phone).first()
-                     if user: log_debug(f"User matched via alt phone: {user.name} (ID: {user.id})")
-            
+            # NEW LOGIC: Match by CheckoutRequestID first
+            payment = Payment.query.filter_by(checkout_request_id=checkout_request_id).first()
             booking = None
-            if user:
-                # Find latest pending/confirmed booking
-                booking = Booking.query.filter_by(user_id=user.id).filter(
-                    Booking.status.in_(['pending', 'confirmed'])
-                ).order_by(Booking.id.desc()).first()
+            
+            if payment:
+                log_debug(f"Matched Pending Payment: {payment.id} for Booking {payment.booking_id}")
+                payment.status = 'completed'
+                payment.reference = receipt_number
                 
+                booking = Booking.query.get(payment.booking_id)
                 if booking:
-                    log_debug(f"Initial booking found: ID {booking.id} | Status: {booking.status} | HasPayment: {bool(booking.payment)}")
+                    booking.status = 'confirmed'
+                
+                db.session.commit()
+                # Ensure we have the latest state
+                db.session.refresh(payment)
+                if booking: db.session.refresh(booking)
+                
+                new_payment = payment
+                
+            else:
+                log_debug("No pending payment found by CheckoutRequestID. Falling back to Phone Matching.")
+                
+                # FALLBACK LOGIC (Existing phone matching)
+                # Let's try to find the User by phone first (existing logic)
+                log_debug("TRACE: Attempting User Loopup now...")
+                user = User.query.filter_by(phone_number=phone_number).first()
+                if user:
+                    log_debug(f"User matched: {user.name} (ID: {user.id})")
                 else:
-                    log_debug("No initial booking found for user.")
-
-                # If the booking is already paid, find the next one
-                if booking and booking.payment:
-                     log_debug(f"Booking {booking.id} already paid. Searching for older unpaid...")
-                     booking = Booking.query.filter_by(user_id=user.id).filter(
+                     # Try adding/removing country code
+                     if phone_number.startswith('254'):
+                         alt_phone = '0' + phone_number[3:]
+                         user = User.query.filter_by(phone_number=alt_phone).first()
+                         if user: log_debug(f"User matched via alt phone: {user.name} (ID: {user.id})")
+                
+                if user:
+                    # Find latest pending/confirmed booking
+                    booking = Booking.query.filter_by(user_id=user.id).filter(
                         Booking.status.in_(['pending', 'confirmed'])
-                     ).filter(~Booking.payment.has()).order_by(Booking.id.desc()).first()
-                     if booking:
-                         log_debug(f"Fallback booking found: {booking.id}")
-                     else:
-                         log_debug("No fallback booking found.")
+                    ).order_by(Booking.id.desc()).first()
+                    
+                    if booking:
+                        log_debug(f"Initial booking found: ID {booking.id} | Status: {booking.status} | HasPayment: {bool(booking.payment)}")
+                    else:
+                        log_debug("No initial booking found for user.")
 
-            if not booking:
-                log_debug(f"FAILED TO LINK: Phone {phone_number}. User: {user}")
-                print(f"Could not link payment {receipt_number} to a booking. Phone: {phone_number}. User Found: {user}")
-                return success_response(None, message="Callback received but no matching booking found")
-            
-            # Found booking! Update it.
-            booking.status = 'confirmed'
-            
-            # Create Payment Record
-            new_payment = Payment(
-                booking_id=booking.id,
-                user_id=booking.user_id,
-                amount=float(amount),
-                method='mpesa',
-                status='completed',
-                reference=receipt_number
-            )
-            db.session.add(new_payment)
-            db.session.commit()
+                    # If the booking is already paid, ignore it to prevent overwrites
+                    if booking and booking.payment and booking.payment.status == 'completed':
+                         log_debug(f"Booking {booking.id} already paid. Ignoring to prevent duplicate linking.")
+                         booking = None
+    
+                if not booking:
+                    log_debug(f"FAILED TO LINK: Phone {phone_number}. User: {user}")
+                    print(f"Could not link payment {receipt_number} to a booking. Phone: {phone_number}. User Found: {user}")
+                    return success_response(None, message="Callback received but no matching booking found")
+                
+                # Found booking! Update it.
+                booking.status = 'confirmed'
+                
+                # Create Payment Record (Since none existed)
+                new_payment = Payment(
+                    booking_id=booking.id,
+                    user_id=booking.user_id,
+                    amount=float(amount),
+                    method='mpesa',
+                    status='completed',
+                    reference=receipt_number,
+                    checkout_request_id=checkout_request_id
+                )
+                db.session.add(new_payment)
+                db.session.commit()
+                
+                payment = new_payment
+                
+                # Force SQLAlchemy to reload the 'payment' relationship on next access
+                db.session.expire(booking, ['payment'])
+                db.session.refresh(booking)
             
             # Force SQLAlchemy to reload the 'payment' relationship on next access
             db.session.expire(booking, ['payment'])
@@ -330,8 +300,11 @@ class MpesaCallbackResource(Resource):
             return success_response(None, message="Payment processed successfully")
 
         except Exception as e:
-            print(f"Callback Error: {e}")
             import traceback
+            error_details = traceback.format_exc()
+            log_debug(f"EXCEPTION IN CALLBACK: {str(e)}")
+            log_debug(error_details)
+            print(f"Callback Error: {e}")
             traceback.print_exc()
             return error_response("Processing failed", error=str(e), status_code=500)
 
