@@ -11,6 +11,13 @@ from app.extensions import db
 payment_bp = Blueprint('payment_bp', __name__)
 api = Api(payment_bp)
 
+def log_debug(msg):
+    try:
+        with open("payment_debug.log", "a") as f:
+            f.write(f"{datetime.now()}: {msg}\n")
+    except:
+        pass
+
 class MpesaHelper:
     """Helper class to handle Daraja API interactions"""
     
@@ -26,6 +33,8 @@ class MpesaHelper:
             print(f"M-Pesa Token Error: {res.text}")
             return res.json().get('access_token')
         except Exception as e:
+            log_debug(f"EXCEPTION IN MpesaHelper.get_access_token: {str(e)}")
+            log_debug(traceback.format_exc())
             print(f"M-Pesa Token Exception: {e}")
             return None
 
@@ -42,6 +51,7 @@ class MpesaHelper:
         passkey = current_app.config.get('MPESA_PASSKEY')
         callback_url = current_app.config.get('MPESA_CALLBACK_URL', '').strip()
         print(f"DEBUG: Using CallBackURL: {callback_url}")
+        log_debug(f"TRIGGERING STK PUSH. Phone: {phone_number}, Amount: {amount}. CallbackURL: {callback_url}")
         
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         password = base64.b64encode(
@@ -87,6 +97,14 @@ class MpesaPaymentResource(Resource):
                 phone_number = '254' + phone_number[1:]
             elif phone_number.startswith('+'):
                 phone_number = phone_number[1:]
+            
+            # CRITICAL FIX: Update the User's phone number to the one being used for payment.
+            # This ensures that when the callback comes (keyed by phone), we verify the correct User/Booking.
+            booking = Booking.query.get(booking_id)
+            if booking and booking.user:
+                print(f"Updating User {booking.user.id} phone from {booking.user.phone_number} to {phone_number} for payment linking.")
+                booking.user.phone_number = phone_number
+                db.session.commit()
 
             stk_response = MpesaHelper.trigger_stk_push(phone_number, amount, booking_id)
             
@@ -126,6 +144,7 @@ class MpesaCallbackResource(Resource):
         """Handle M-Pesa IPN Callback"""
         try:
             data = request.get_json()
+            log_debug(f"CALLBACK RECEIVED: {data}")
             if not data or 'Body' not in data:
                 return error_response("Invalid callback data", status_code=400)
 
@@ -219,22 +238,53 @@ class MpesaCallbackResource(Resource):
             # We accept that we might limit this to: "Match the most recent pending booking for any user? No."
             
             # Let's look at `User` model. Does it have phone?
-            from ..models.user import User
-            # If User has phone, we can match.
+            # Try to get AccountReference for direct linking
+            account_ref = next((item['Value'] for item in meta_data if item['Name'] == 'MpesaReceiptNumber'), None) # Fallback
+            # Actually, AccountReference might not be in the Item list in some callbacks, but let's check
+            # For B2C it is not, for C2B/STK it differs. 
+            # In STK Push, the list usually has: Amount, MpesaReceiptNumber, Balance, TransactionDate, PhoneNumber
+            # It RARELY has AccountReference.
+            
+            # HOWEVER, we can stick to the phone number logic BUT fail gracefully or log better.
+            
+            # Let's try to find the User by phone first (existing logic)
+            raise Exception("DEBUG: FORCED CRASH AT LINE 250")
             user = User.query.filter_by(phone_number=phone_number).first()
-            if not user:
+            if user:
+                log_debug(f"User matched: {user.name} (ID: {user.id})")
+            else:
                  # Try adding/removing country code
                  if phone_number.startswith('254'):
                      alt_phone = '0' + phone_number[3:]
                      user = User.query.filter_by(phone_number=alt_phone).first()
-
+                     if user: log_debug(f"User matched via alt phone: {user.name} (ID: {user.id})")
+            
             booking = None
             if user:
-                # Find latest pending booking for this user
-                booking = Booking.query.filter_by(user_id=user.id, status='pending').order_by(Booking.id.desc()).first()
-            
+                # Find latest pending/confirmed booking
+                booking = Booking.query.filter_by(user_id=user.id).filter(
+                    Booking.status.in_(['pending', 'confirmed'])
+                ).order_by(Booking.id.desc()).first()
+                
+                if booking:
+                    log_debug(f"Initial booking found: ID {booking.id} | Status: {booking.status} | HasPayment: {bool(booking.payment)}")
+                else:
+                    log_debug("No initial booking found for user.")
+
+                # If the booking is already paid, find the next one
+                if booking and booking.payment:
+                     log_debug(f"Booking {booking.id} already paid. Searching for older unpaid...")
+                     booking = Booking.query.filter_by(user_id=user.id).filter(
+                        Booking.status.in_(['pending', 'confirmed'])
+                     ).filter(~Booking.payment.has()).order_by(Booking.id.desc()).first()
+                     if booking:
+                         log_debug(f"Fallback booking found: {booking.id}")
+                     else:
+                         log_debug("No fallback booking found.")
+
             if not booking:
-                print(f"Could not link payment {receipt_number} to a booking. Phone: {phone_number}")
+                log_debug(f"FAILED TO LINK: Phone {phone_number}. User: {user}")
+                print(f"Could not link payment {receipt_number} to a booking. Phone: {phone_number}. User Found: {user}")
                 return success_response(None, message="Callback received but no matching booking found")
             
             # Found booking! Update it.
@@ -252,10 +302,11 @@ class MpesaCallbackResource(Resource):
             db.session.add(new_payment)
             db.session.commit()
             
-            # Refresh booking to ensure 'payment' relationship is loaded for to_dict()
+            # Force SQLAlchemy to reload the 'payment' relationship on next access
+            db.session.expire(booking, ['payment'])
             db.session.refresh(booking)
             
-            print(f"Payment Confirmed: {receipt_number} for Booking {booking.id}")
+            print(f"Payment Confirmed: {receipt_number} for Booking {booking.id}. Amount: {booking.payment.amount}")
 
             # 1. Emit to Commuter (User Room)
             socketio.emit('payment_received', {
