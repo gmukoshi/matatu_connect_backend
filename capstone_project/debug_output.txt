@@ -1,4 +1,0 @@
---- M-Pesa Debug Start ---
-Consumer Key Set: False
-Consumer Secret Set: False
-ERROR: Using default placeholder credentials! Please update .env

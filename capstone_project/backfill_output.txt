@@ -1,9 +1,0 @@
---- Backfilling Drivers ---
-Updating Driver 1 (Sony Mwai): Setting SaccoID=1, Status=approved
-Updating Driver 2 (Brenda Chebet): Setting SaccoID=1, Status=approved
-Updating Driver 6 (Ariela Cherop): Setting SaccoID=1, Status=approved
-Updating Driver 8 (Davis Too): Setting SaccoID=1, Status=approved
-Updating Driver 11 (John Kamau): Setting SaccoID=1, Status=approved
-Updating Driver 15 (driver 2): Setting SaccoID=1, Status=approved
-Successfully updated 6 drivers.
---- Backfill Complete ---

@@ -15,6 +15,9 @@ def register():
     if not email or not password or not name:
         return {"error": "name, email and password are required"}, 400
     
+    if data.get("role") == "driver" and not data.get("licence"):
+         return {"error": "License number is required for drivers"}, 400
+    
     if User.query.filter_by(email=email).first():
         return {"error": "Email already registered"}, 409
 

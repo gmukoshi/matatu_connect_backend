@@ -1,9 +1,0 @@
---- M-Pesa Debug Start ---
-Consumer Key Set: True
-Consumer Secret Set: True
-Attempting to generate access token...
-EXCEPTION: Working outside of application context.
-
-This typically means that you attempted to use functionality that needed
-the current application. To solve this, set up an application context
-with app.app_context(). See the documentation for more information.

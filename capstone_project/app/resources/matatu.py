@@ -5,6 +5,7 @@ from ..models.matatu import Matatu
 from ..models.user import User
 from ..extensions import db
 from ..utils.responses import success_response, error_response
+from ..utils.email import send_email
 
 matatu_bp = Blueprint('matatu_bp', __name__)
 api = Api(matatu_bp)
@@ -60,6 +61,17 @@ class MatatuListResource(Resource):
             
             db.session.add(new_matatu)
             db.session.commit()
+            
+            # Send Email to Assigned Driver
+            if new_matatu.driver_id:
+                driver = db.session.get(User, new_matatu.driver_id)
+                if driver:
+                    send_email(
+                        driver.email, 
+                        "New Vehicle Assignment - Matatu Connect",
+                        f"<h3>Hello {driver.name},</h3><p>You have been assigned to vehicle <b>{new_matatu.plate_number}</b>.</p><p>Please log in to your dashboard to accept or reject this assignment.</p>"
+                    )
+            
             return success_response(data=new_matatu.to_dict(), status_code=201)
         except Exception as e:
             db.session.rollback()
@@ -87,6 +99,24 @@ class MatatuResource(Resource):
         if "driver_id" in data:
             matatu.driver_id = data["driver_id"]
             matatu.assignment_status = "pending" # Reset status on new assignment
+            
+            # Send Email to Assigned Driver
+            print(f"DEBUG: Matatu {matatu.id} PATCH received. Data keys: {data.keys()}")
+            print(f"DEBUG: driver_id in data: {'driver_id' in data}")
+            if 'driver_id' in data:
+                 print(f"DEBUG: driver_id value: {data['driver_id']}")
+
+            driver = db.session.get(User, data["driver_id"])
+            if driver:
+                print(f"DEBUG: Attempting to send email to {driver.email}")
+                email_sent = send_email(
+                    driver.email, 
+                    "New Vehicle Assignment - Matatu Connect",
+                    f"<h3>Hello {driver.name},</h3><p>You have been assigned to vehicle <b>{matatu.plate_number}</b>.</p><p>Please log in to your dashboard to accept or reject this assignment.</p>"
+                )
+                print(f"DEBUG: SendGrid Result: {email_sent}")
+            else:
+                print("DEBUG: Driver not found in DB")
 
         db.session.commit()
         return success_response(data=matatu.to_dict(), message="Matatu updated")
@@ -137,6 +167,20 @@ class MatatuAcceptResource(Resource):
 
         matatu.assignment_status = "active"
         db.session.commit()
+        
+        # Notify Manager
+        manager = None
+        if matatu.sacco:
+            # Logic to find manager - simplified assuming 1 manager per sacco or just notifying Sacco email if existed
+            # For now, let's just log it if we can't find a direct manager email easily without Sacco model
+            pass
+            
+        send_email(
+            current_identity['email'] if isinstance(current_identity, dict) else "driver@matatu.com",
+            "Assignment Accepted",
+            f"You have successfully accepted assignment for {matatu.plate_number}."
+        )
+
         return success_response(data=matatu.to_dict(), message="Assignment accepted")
 
 class MatatuRejectResource(Resource):
