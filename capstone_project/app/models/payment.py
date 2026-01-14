@@ -12,7 +12,10 @@ class Payment(db.Model):
     amount = db.Column(db.Float, nullable=False)
     method = db.Column(db.String(50), nullable=False)  # mpesa, card, cash
     status = db.Column(db.String(30), default="pending")  # pending, completed, failed
-    reference = db.Column(db.String(100), unique=True)
+    reference = db.Column(db.String(100), unique=True) # Mpesa Receipt Number
+
+    checkout_request_id = db.Column(db.String(100), unique=True, nullable=True)
+    merchant_request_id = db.Column(db.String(100), nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -29,5 +32,6 @@ class Payment(db.Model):
             "method": self.method,
             "status": self.status,
             "reference": self.reference,
+            "checkout_request_id": self.checkout_request_id,
             "created_at": self.created_at.isoformat()
         }

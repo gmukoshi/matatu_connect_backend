@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..models.rating import Rating
 from ..extensions import db
 from ..utils.responses import success_response, error_response
+from ..models.user import User
 
 rating_bp = Blueprint('rating_bp', __name__)
 api = Api(rating_bp)
@@ -44,4 +45,27 @@ class RatingListResource(Resource):
         except Exception as e:
             return error_response(str(e), 500)
 
+class RatingReplyResource(Resource):
+    @jwt_required()
+    def patch(self, rating_id):
+        user_info = get_jwt_identity()
+        if user_info.get('role') != User.ROLE_SACCO_MANAGER:
+            return error_response("Unauthorized", 403)
+            
+        rating = db.session.get(Rating, rating_id)
+        if not rating:
+            return error_response("Rating not found", 404)
+            
+        data = request.get_json()
+        reply_text = data.get('reply')
+        
+        if not reply_text:
+             return error_response("Reply text required", 400)
+             
+        rating.reply = reply_text
+        db.session.commit()
+        
+        return success_response(data=rating.to_dict(), message="Reply added")
+
 api.add_resource(RatingListResource, '/')
+api.add_resource(RatingReplyResource, '/<int:rating_id>/reply')

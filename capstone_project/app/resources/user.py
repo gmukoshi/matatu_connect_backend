@@ -198,6 +198,11 @@ class DriverInviteResource(Resource):
         if not manager.sacco_id:
              return make_response(message="Config Error", error="Manager has no Sacco assigned", status_code=500)
 
+        # CHECK: Driver already in another Sacco?
+        if user.sacco_id and user.sacco_id != manager.sacco_id:
+            # Fetch existing sacco name for better error message if possible, or just generic
+            return make_response(message="Conflict", error="Driver is already assigned to another Sacco. Dismiss them first.", status_code=409)
+
         user.sacco_id = manager.sacco_id
         # Reset status to pending so manager sees them and must approve (verifying license again effectively)
         # OR keep 'approved' if they trust the invite? 
@@ -234,11 +239,22 @@ class DriverActionResource(Resource):
             # Auto-assign to manager's Sacco if not already assigned
             if not user.sacco_id and manager.sacco_id:
                 user.sacco_id = manager.sacco_id
+            elif user.sacco_id and user.sacco_id != manager.sacco_id:
+                return make_response(message="Conflict", error="Driver is already assigned to another Sacco.", status_code=409)
                 
         elif action == "reject":
             user.verification_status = "rejected"
+            
+        elif action == "dismiss":
+            # Release driver from Sacco
+            if user.sacco_id == manager.sacco_id:
+                user.sacco_id = None
+                user.verification_status = "pending" # Reset status
+            else:
+                return make_response(message="Forbidden", error="Cannot dismiss driver from another Sacco", status_code=403)
+
         else:
-            return make_response(message="Invalid Action", error="Action must be approve or reject", status_code=400)
+            return make_response(message="Invalid Action", error="Action must be approve, reject, or dismiss", status_code=400)
             
         try:
             db.session.commit()

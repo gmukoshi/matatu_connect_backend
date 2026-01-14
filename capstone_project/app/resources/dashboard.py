@@ -116,6 +116,47 @@ class SaccoDashboardStats(Resource):
             from datetime import timedelta
             revenue_trend = []
             today = date.today()
+            yesterday = today - timedelta(days=1)
+            
+            # --- COMPARISON LOGIC ---
+            
+            # 1. Revenue Comparison
+            revenue_today = db.session.query(func.sum(Payment.amount))\
+                .join(Booking, Payment.booking_id == Booking.id)\
+                .join(Matatu, Booking.matatu_id == Matatu.id)\
+                .filter(Matatu.sacco_id == sacco_id)\
+                .filter(func.date(Payment.created_at) == today)\
+                .filter(Payment.status == 'completed')\
+                .scalar() or 0.0
+
+            revenue_yesterday = db.session.query(func.sum(Payment.amount))\
+                .join(Booking, Payment.booking_id == Booking.id)\
+                .join(Matatu, Booking.matatu_id == Matatu.id)\
+                .filter(Matatu.sacco_id == sacco_id)\
+                .filter(func.date(Payment.created_at) == yesterday)\
+                .filter(Payment.status == 'completed')\
+                .scalar() or 0.0
+                
+            if revenue_yesterday > 0:
+                revenue_growth = ((revenue_today - revenue_yesterday) / revenue_yesterday) * 100
+            else:
+                revenue_growth = 100.0 if revenue_today > 0 else 0.0
+
+            # 2. Passenger Comparison
+            passengers_today = daily_passengers # Already calculated above (lines 89-94)
+            
+            passengers_yesterday = db.session.query(func.sum(MatatuLog.passengers_carried))\
+                .join(Matatu, MatatuLog.matatu_id == Matatu.id)\
+                .filter(Matatu.sacco_id == sacco_id)\
+                .filter(MatatuLog.log_date == yesterday)\
+                .scalar() or 0
+            
+            if passengers_yesterday > 0:
+                passenger_growth = ((passengers_today - passengers_yesterday) / passengers_yesterday) * 100
+            else:
+                passenger_growth = 100.0 if passengers_today > 0 else 0.0
+
+            # Trend Array Construction
             for i in range(6, -1, -1):
                 day = today - timedelta(days=i)
                 day_revenue = db.session.query(func.sum(Payment.amount))\
@@ -137,7 +178,12 @@ class SaccoDashboardStats(Resource):
                 "daily_passengers": int(daily_passengers),
                 "fuel_efficiency": f"{fuel_efficiency} km/L",
                 "total_drivers": total_drivers,
-                "revenue_trend": revenue_trend
+                "revenue_trend": revenue_trend,
+                # New Fields
+                "revenue_growth": round(revenue_growth, 1),
+                "passenger_growth": round(passenger_growth, 1),
+                "revenue_today": float(revenue_today),
+                "revenue_yesterday": float(revenue_yesterday)
             }
             
             return success_response(data=stats, message="Sacco stats retrieved")

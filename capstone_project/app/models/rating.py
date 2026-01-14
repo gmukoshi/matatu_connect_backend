@@ -11,8 +11,12 @@ class Rating(db.Model):
 
     score = db.Column(db.Integer, nullable=False)  # 1–5
     comment = db.Column(db.Text)
+    reply = db.Column(db.Text, nullable=True) # Manager reply
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship to access vehicle details (plate, route)
+    matatu = db.relationship("Matatu", backref="ratings")
 
     def save(self):
         if self.score < 1 or self.score > 5:
@@ -26,6 +30,10 @@ class Rating(db.Model):
             "user_id": self.user_id,
             "matatu_id": self.matatu_id,
             "score": self.score,
+            "score": self.score,
             "comment": self.comment,
+            "matatu_plate": self.matatu.plate_number if self.matatu else "Unknown",
+            "reply": self.reply,
+            "reply": self.reply,
             "created_at": self.created_at.isoformat()
         }
