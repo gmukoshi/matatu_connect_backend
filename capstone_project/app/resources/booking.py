@@ -114,6 +114,50 @@ class MatatuBookingsResource(Resource):
         except Exception as e:
             return error_response(str(e), 500)
 
+class TripCompletionResource(Resource):
+    @jwt_required()
+    def post(self):
+        user_info = get_jwt_identity()
+        user_id = user_info['id']
+        role = user_info.get('role')
+
+        if role != 'driver':
+            return error_response("Unauthorized: Only drivers can complete trips", 403)
+
+        try:
+            # Find the matatu assigned to this driver
+            matatu = Matatu.query.filter_by(driver_id=user_id).first()
+            if not matatu:
+                return error_response("No vehicle assigned to this driver", 404)
+
+            # Find all active bookings (confirmed)
+            # We might also want to mark 'pending' ones as 'rejected' or just leave them?
+            # Let's say we complete confirmed ones.
+            active_bookings = Booking.query.filter_by(matatu_id=matatu.id, status='confirmed').all()
+            
+            if not active_bookings:
+                return success_response(message="No active bookings to complete")
+
+            count = 0
+            for booking in active_bookings:
+                booking.status = 'completed'
+                count += 1
+                
+                # Notify User
+                socketio.emit('booking_status_update', booking.to_dict(), room=f"user_{booking.user_id}")
+            
+            db.session.commit()
+            
+            # Notify Driver/Matatu room
+            socketio.emit('trip_completed', {"matatu_id": matatu.id, "count": count}, room=f"matatu_{matatu.id}")
+
+            return success_response(data={"count": count}, message=f"Trip completed. {count} bookings marked as completed.")
+
+        except Exception as e:
+            db.session.rollback()
+            return error_response(str(e), 500)
+
 api.add_resource(BookingListResource, '/')
 api.add_resource(BookingActionResource, '/<int:booking_id>/<string:action>')
 api.add_resource(MatatuBookingsResource, '/matatu/<int:matatu_id>')
+api.add_resource(TripCompletionResource, '/complete_trip')
