@@ -30,8 +30,10 @@ class MpesaHelper:
         api_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
         
         try:
-            res = requests.get(api_url, auth=HTTPBasicAuth(consumer_key, consumer_secret))
-            print(f"M-Pesa Token Error: {res.text}")
+            res = requests.get(api_url, auth=HTTPBasicAuth(consumer_key, consumer_secret), timeout=30)
+            if res.status_code != 200:
+                print(f"M-Pesa Token Error: {res.text}")
+                return None
             return res.json().get('access_token')
         except Exception as e:
             log_debug(f"EXCEPTION IN MpesaHelper.get_access_token: {str(e)}")
@@ -77,7 +79,7 @@ class MpesaHelper:
 
         api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
         print(f"M-Pesa Request: {payload}")
-        response = requests.post(api_url, json=payload, headers=headers)
+        response = requests.post(api_url, json=payload, headers=headers, timeout=30)
         print(f"M-Pesa Response: {response.text}")
         return response.json()
 
