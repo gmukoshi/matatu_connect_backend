@@ -181,14 +181,17 @@ class MatatuAcceptResource(Resource):
             # For now, let's just log it if we can't find a direct manager email easily without Sacco model
             pass
             
-        driver = db.session.get(User, user_id)
-        driver_email = driver.email if driver else "driver@matatu.com"
+        try:
+            driver = db.session.get(User, user_id)
+            driver_email = driver.email if driver else "driver@matatu.com"
 
-        send_email(
-            driver_email,
-            "Assignment Accepted",
-            f"You have successfully accepted assignment for {matatu.plate_number}."
-        )
+            send_email(
+                driver_email,
+                "Assignment Accepted",
+                f"You have successfully accepted assignment for {matatu.plate_number}."
+            )
+        except Exception as e:
+            print(f"Warning: Email notification failed: {e}")
 
         return success_response(data=matatu.to_dict(), message="Assignment accepted")
 
