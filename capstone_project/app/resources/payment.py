@@ -27,7 +27,8 @@ class MpesaHelper:
         """Fetch OAuth2 access token from Safaricom"""
         consumer_key = current_app.config.get('MPESA_CONSUMER_KEY', '').strip()
         consumer_secret = current_app.config.get('MPESA_CONSUMER_SECRET', '').strip()
-        api_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+        base_url = current_app.config.get('MPESA_API_BASE_URL')
+        api_url = f"{base_url}/oauth/v1/generate?grant_type=client_credentials"
         
         try:
             res = requests.get(api_url, auth=HTTPBasicAuth(consumer_key, consumer_secret), timeout=30)
@@ -77,7 +78,7 @@ class MpesaHelper:
             "TransactionDesc": f"Payment for Booking {booking_id}"
         }
 
-        api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+        api_url = f"{current_app.config.get('MPESA_API_BASE_URL')}/mpesa/stkpush/v1/processrequest"
         print(f"M-Pesa Request: {payload}")
         response = requests.post(api_url, json=payload, headers=headers, timeout=30)
         print(f"M-Pesa Response: {response.text}")

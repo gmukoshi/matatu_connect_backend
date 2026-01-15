@@ -30,6 +30,15 @@ class Config:
     MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "your_consumer_key_here")
     MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "your_consumer_secret_here")
     
+    # Environment: 'sandbox' or 'production'
+    MPESA_ENV = os.getenv("MPESA_ENV", "sandbox")
+    
+    # Base URL switching
+    if MPESA_ENV == "production":
+        MPESA_API_BASE_URL = "https://api.safaricom.co.ke"
+    else:
+        MPESA_API_BASE_URL = "https://sandbox.safaricom.co.ke"
+
     # Default Sandbox Shortcode is 174379
     MPESA_SHORTCODE = os.getenv("MPESA_SHORTCODE", "174379")
     
