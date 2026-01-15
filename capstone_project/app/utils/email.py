@@ -27,5 +27,7 @@ def send_email(to_email, subject, content):
         print(f"Email sent to {to_email} | Status Code: {response.status_code}")
         return True
     except Exception as e:
+        # Log error but return False so caller knows, without crashing app
         print(f"ERROR: Failed to send email to {to_email}. Error: {str(e)}")
+        return False
         return False
