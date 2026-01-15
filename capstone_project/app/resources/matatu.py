@@ -66,11 +66,14 @@ class MatatuListResource(Resource):
             if new_matatu.driver_id:
                 driver = db.session.get(User, new_matatu.driver_id)
                 if driver:
-                    send_email(
-                        driver.email, 
-                        "New Vehicle Assignment - Matatu Connect",
-                        f"<h3>Hello {driver.name},</h3><p>You have been assigned to vehicle <b>{new_matatu.plate_number}</b>.</p><p>Please log in to your dashboard to accept or reject this assignment.</p>"
-                    )
+                    try:
+                        send_email(
+                            driver.email, 
+                            "New Vehicle Assignment - Matatu Connect",
+                            f"<h3>Hello {driver.name},</h3><p>You have been assigned to vehicle <b>{new_matatu.plate_number}</b>.</p><p>Please log in to your dashboard to accept or reject this assignment.</p>"
+                        )
+                    except Exception as e:
+                        print(f"Warning: Email sending failed: {e}")
             
             return success_response(data=new_matatu.to_dict(), status_code=201)
         except Exception as e:
