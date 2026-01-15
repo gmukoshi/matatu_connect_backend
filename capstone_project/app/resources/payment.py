@@ -309,5 +309,33 @@ class MpesaCallbackResource(Resource):
             traceback.print_exc()
             return error_response("Processing failed", error=str(e), status_code=500)
 
+
+class MpesaConfigCheckResource(Resource):
+    def get(self):
+        """Debug endpoint to verify M-Pesa Configuration"""
+        consumer_key = current_app.config.get('MPESA_CONSUMER_KEY')
+        consumer_secret = current_app.config.get('MPESA_CONSUMER_SECRET')
+        shortcode = current_app.config.get('MPESA_SHORTCODE')
+        passkey = current_app.config.get('MPESA_PASSKEY')
+        callback_url = current_app.config.get('MPESA_CALLBACK_URL')
+        
+        status = {
+            "MPESA_CONSUMER_KEY": "SET" if consumer_key and "your_" not in consumer_key else "MISSING/DEFAULT",
+            "MPESA_CONSUMER_SECRET": "SET" if consumer_secret and "your_" not in consumer_secret else "MISSING/DEFAULT",
+            "MPESA_SHORTCODE": shortcode,
+            "MPESA_PASSKEY": "SET" if passkey else "MISSING",
+            "MPESA_CALLBACK_URL": callback_url
+        }
+        
+        # Test Token Generation
+        try:
+            token = MpesaHelper.get_access_token()
+            status["access_token_generation"] = "SUCCESS" if token else "FAILED"
+        except Exception as e:
+            status["access_token_generation"] = f"ERROR: {str(e)}"
+            
+        return success_response(status, message="M-Pesa Config Status")
+
 api.add_resource(MpesaPaymentResource, '/stk-push')
 api.add_resource(MpesaCallbackResource, '/callback')
+api.add_resource(MpesaConfigCheckResource, '/debug-config')
