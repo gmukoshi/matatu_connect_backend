@@ -155,10 +155,11 @@ class DriverSearchResource(Resource):
         if not email:
             return make_response(message="Bad Request", error="Email query parameter required", status_code=400)
             
-        # Normalize: search lowercased
-        email = email.lower().strip()
+        # Normalize input (though ilike handles the match, cleaning input is good)
+        email = email.strip()
             
-        user = User.query.filter_by(email=email).first()
+        # Use ilike for case-insensitive DB match
+        user = User.query.filter(User.email.ilike(email)).first()
         if not user:
             return make_response(message="Not Found", error="Driver not found", status_code=404)
             
