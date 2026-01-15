@@ -36,14 +36,19 @@ class BookingListResource(Resource):
 
     @jwt_required()
     def post(self):
-        user_info = get_jwt_identity()
         data = request.get_json()
         
         if not data.get('matatu_id') or not data.get('seat_number'):
             return error_response("matatu_id and seat_number required", 400)
 
+        user_id = get_jwt_identity()
+        try:
+             user_id = int(user_id)
+        except ValueError:
+             return error_response("Invalid User ID in token", 401)
+
         new_booking = Booking(
-            user_id=user_info['id'],
+            user_id=user_id,
             matatu_id=data['matatu_id'],
             seat_number=data['seat_number'],
             status='pending'
@@ -64,9 +69,16 @@ class BookingListResource(Resource):
 class BookingActionResource(Resource):
     @jwt_required()
     def post(self, booking_id, action):
-        user_info = get_jwt_identity()
-        user_id = user_info['id']
-        role = user_info.get('role')
+        current_identity = get_jwt_identity()
+        if not current_identity:
+             return error_response("Missing identity", 401)
+        try:
+             user_id = int(current_identity)
+        except ValueError:
+             return error_response("Invalid ID", 401)
+             
+        claims = get_jwt()
+        role = claims.get('role')
 
         booking = db.session.get(Booking, booking_id)
         if not booking:
