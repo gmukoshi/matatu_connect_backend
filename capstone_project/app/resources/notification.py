@@ -11,8 +11,8 @@ api = Api(notification_bp)
 class NotificationListResource(Resource):
     @jwt_required()
     def get(self):
-        current_user = get_jwt_identity()
-        user_id = current_user['id']
+        current_user_id = get_jwt_identity()
+        user_id = current_user_id
         
         # specific to user, ordered by newest
         notes = Notification.query.filter_by(user_id=user_id)\
@@ -23,13 +23,13 @@ class NotificationListResource(Resource):
 class NotificationReadResource(Resource):
     @jwt_required()
     def put(self, notification_id):
-        current_user = get_jwt_identity()
+        current_user_id = get_jwt_identity()
         note = db.session.get(Notification, notification_id)
         
         if not note:
             return error_response("Notification not found", 404)
             
-        if note.user_id != current_user['id']:
+        if note.user_id != int(current_user_id):
              return error_response("Unauthorized", 403)
              
         note.is_read = True

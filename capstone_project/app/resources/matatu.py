@@ -158,8 +158,11 @@ class MatatuAcceptResource(Resource):
         if not matatu:
             return error_response("Matatu not found", 404)
         
-        current_identity = get_jwt_identity()
-        user_id = current_identity['id'] if isinstance(current_identity, dict) else current_identity
+        current_user_id = get_jwt_identity()
+        try:
+             user_id = int(current_user_id)
+        except ValueError:
+             return error_response("Invalid User ID in token", 401)
         
         # Verify the user is the assigned driver
         if matatu.driver_id != user_id:
@@ -193,8 +196,11 @@ class MatatuRejectResource(Resource):
         if not matatu:
             return error_response("Matatu not found", 404)
 
-        current_identity = get_jwt_identity()
-        user_id = current_identity['id'] if isinstance(current_identity, dict) else current_identity
+        current_user_id = get_jwt_identity()
+        try:
+             user_id = int(current_user_id)
+        except ValueError:
+             return error_response("Invalid User ID in token", 401)
         
         # Verify the user is the assigned driver
         if matatu.driver_id != user_id:
