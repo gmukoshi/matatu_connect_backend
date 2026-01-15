@@ -34,21 +34,28 @@ class MpesaHelper:
             res = requests.get(api_url, auth=HTTPBasicAuth(consumer_key, consumer_secret), timeout=30)
             if res.status_code != 200:
                 print(f"M-Pesa Token Error: {res.text}")
-                return None
+                # Return the actual error to the frontend for easier debugging
+                raise Exception(f"Token Gen Failed: {res.status_code} - {res.text}")
             return res.json().get('access_token')
         except Exception as e:
             log_debug(f"EXCEPTION IN MpesaHelper.get_access_token: {str(e)}")
             log_debug(traceback.format_exc())
             print(f"M-Pesa Token Exception: {e}")
-            return None
+            # Re-raise so the caller knowns exactly WHY it failed
+            raise e
 
     @staticmethod
     def trigger_stk_push(phone_number, amount, booking_id):
         """Send the actual STK Push request"""
-        access_token = MpesaHelper.get_access_token()
+        try:
+            access_token = MpesaHelper.get_access_token()
+        except Exception as e:
+            print(f"Token Error: {e}")
+            raise Exception(f"Failed to generate Access Token: {str(e)}") # Pass detailed error up
+
         if not access_token:
-            print("Failed to generate M-Pesa access token")
-            raise Exception("Failed to generate M-Pesa access token")
+            print("Failed to generate M-Pesa access token (None returned)")
+            raise Exception("Failed to generate M-Pesa access token (Unknown reason)")
 
         # Configuration from your app config
         business_short_code = current_app.config.get('MPESA_SHORTCODE')
