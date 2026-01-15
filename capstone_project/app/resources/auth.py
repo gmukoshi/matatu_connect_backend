@@ -8,7 +8,7 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True) or {}
-    email = data.get("email")
+    email = data.get("email", "").lower().strip() # Normalize email
     password = data.get("password")
     name = data.get("name") # Required by your User model
 
@@ -77,11 +77,18 @@ def login():
         # Note: Frontend sends 'email' key even if value is username
         return {"error": "Missing credentials"}, 400
 
-    # Allow login by email OR name (username/sacco name)
-    login_identifier = data["email"]
-    user = User.query.filter((User.email == login_identifier) | (User.name == login_identifier)).first()
+    # Allow login by email (normalized) OR name (username/sacco name)
+    login_input = data.get("email", "").strip() 
+    password = data.get("password")
+
+    # Try email first (lowercased)
+    user = User.query.filter_by(email=login_input.lower()).first()
     
-    if not user or not user.check_password(data["password"]):
+    if not user:
+        # Fallback to name match (exact case or depends on DB collation)
+        user = User.query.filter_by(name=login_input).first()
+
+    if not user or not user.check_password(password):
         return {"error": "Invalid credentials"}, 401
 
     identity = {"id": user.id, "role": user.role}

@@ -155,6 +155,9 @@ class DriverSearchResource(Resource):
         if not email:
             return make_response(message="Bad Request", error="Email query parameter required", status_code=400)
             
+        # Normalize: search lowercased
+        email = email.lower().strip()
+            
         user = User.query.filter_by(email=email).first()
         if not user:
             return make_response(message="Not Found", error="Driver not found", status_code=404)
