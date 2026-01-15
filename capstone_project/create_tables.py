@@ -7,7 +7,7 @@ from app.models.route import Route
 from app.models.booking import Booking
 from app.models.payment import Payment
 from app.models.sacco import Sacco
-from app.models.review import Review
+from app.models.rating import Rating
 
 app = create_app()
 
