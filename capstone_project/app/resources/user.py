@@ -17,8 +17,9 @@ from flask_jwt_extended import get_jwt_identity
 @user_bp.route('/manager/drivers', methods=['GET'])
 @sacco_manager_required
 def get_sacco_drivers():
-    current_user = get_jwt_identity()
-    user = db.session.get(User, current_user['id'])
+    # Identity is now User ID String
+    current_user_id = get_jwt_identity()
+    user = db.session.get(User, current_user_id)
     
     print(f"DEBUG: Fetching drivers for Manager ID: {user.id}, Sacco ID: {user.sacco_id}")
 
@@ -61,8 +62,8 @@ api = Api(user_bp)
 class UserListResource(Resource):
     @jwt_required()
     def get(self):
-        current_identity = get_jwt_identity()
-        current_user = db.session.get(User, current_identity['id'])
+        current_user_id = get_jwt_identity()
+        current_user = db.session.get(User, current_user_id)
         
         if not current_user:
              return make_response(message="Unauthorized", status_code=401)
@@ -204,8 +205,8 @@ class DriverInviteResource(Resource):
         if user.role != User.ROLE_DRIVER:
              return make_response(message="Invalid Role", error="User is not a driver", status_code=400)
              
-        current_user = get_jwt_identity()
-        manager = db.session.get(User, current_user['id'])
+        current_user_id = get_jwt_identity()
+        manager = db.session.get(User, current_user_id)
         
         if not manager.sacco_id:
              return make_response(message="Config Error", error="Manager has no Sacco assigned", status_code=500)
@@ -236,8 +237,8 @@ class DriverInviteResource(Resource):
 class DriverActionResource(Resource):
     @sacco_manager_required
     def post(self, user_id, action):
-        current_user = get_jwt_identity()
-        manager = db.session.get(User, current_user['id'])
+        current_user_id = get_jwt_identity()
+        manager = db.session.get(User, current_user_id)
         
         user = db.session.get(User, user_id)
         if not user:

@@ -56,9 +56,12 @@ def register():
         db.session.commit()
         
         # Auto-login: Generate tokens
-        identity = {"id": user.id, "role": user.role}
-        access_token = create_access_token(identity=identity)
-        refresh_token = create_refresh_token(identity=identity)
+        # Identity MUST be a string (User ID)
+        identity = str(user.id)
+        claims = {"role": user.role, "sacco_id": user.sacco_id}
+        
+        access_token = create_access_token(identity=identity, additional_claims=claims)
+        refresh_token = create_refresh_token(identity=identity, additional_claims=claims)
         
         return {
             "message": "User registered successfully",
@@ -91,10 +94,15 @@ def login():
     if not user or not user.check_password(password):
         return {"error": "Invalid credentials"}, 401
 
-    identity = {"id": user.id, "role": user.role}
+    identity = str(user.id)
+    claims = {"role": user.role, "sacco_id": user.sacco_id}
+
+    access_token = create_access_token(identity=identity, additional_claims=claims)
+    refresh_token = create_refresh_token(identity=identity, additional_claims=claims)
 
     return {
-        "access_token": create_access_token(identity=identity),
-        "refresh_token": create_refresh_token(identity=identity),
-        "user": user.to_dict()
+        "message": "Login successful",
+        "user": user.to_dict(),
+        "access_token": access_token,
+        "refresh_token": refresh_token
     }, 200

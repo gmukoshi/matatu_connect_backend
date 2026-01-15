@@ -1,20 +1,7 @@
 from functools import wraps
-from flask import jsonify
-from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, get_jwt
 
-from app.services.email_service import send_welcome_email
-from app.models.user import User
-from app.extensions import db
-
-
-# ==========================
-# Role constants
-# ==========================
-ROLE_COMMUTER = "commuter"
-ROLE_DRIVER = "driver"
-ROLE_SACCO_MANAGER = "sacco_manager"
-ROLE_ADMIN = "admin"
-
+# ...
 
 # ==========================
 # RBAC DECORATORS
@@ -24,12 +11,13 @@ def roles_required(*allowed_roles):
         @wraps(fn)
         def decorator(*args, **kwargs):
             verify_jwt_in_request()
-            identity = get_jwt_identity()
+            claims = get_jwt()
+            
+            # Identity is now just the user ID string, so we check claims for role
+            if not claims or "role" not in claims:
+                return jsonify({"error": "Invalid token claims (missing role)"}), 401
 
-            if not identity or "role" not in identity:
-                return jsonify({"error": "Invalid token"}), 401
-
-            if identity["role"] not in allowed_roles:
+            if claims["role"] not in allowed_roles:
                 return jsonify({"error": "Forbidden"}), 403
 
             return fn(*args, **kwargs)
