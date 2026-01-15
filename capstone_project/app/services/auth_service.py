@@ -1,7 +1,20 @@
 from functools import wraps
+from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, get_jwt
 
-# ...
+from app.services.email_service import send_welcome_email
+from app.models.user import User
+from app.extensions import db
+
+
+# ==========================
+# Role constants
+# ==========================
+ROLE_COMMUTER = "commuter"
+ROLE_DRIVER = "driver"
+ROLE_SACCO_MANAGER = "sacco_manager"
+ROLE_ADMIN = "admin"
+
 
 # ==========================
 # RBAC DECORATORS
