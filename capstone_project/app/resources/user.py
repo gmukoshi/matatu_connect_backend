@@ -20,10 +20,14 @@ def get_sacco_drivers():
     current_user = get_jwt_identity()
     user = db.session.get(User, current_user['id'])
     
+    print(f"DEBUG: Fetching drivers for Manager ID: {user.id}, Sacco ID: {user.sacco_id}")
+
     if not user or not user.sacco_id:
+        print("DEBUG: Manager has no Sacco ID. Returning empty list.")
         return jsonify([])
 
     drivers = User.query.filter_by(role=User.ROLE_DRIVER, sacco_id=user.sacco_id).all()
+    print(f"DEBUG: Found {len(drivers)} drivers for Sacco {user.sacco_id}")
     
     # Enhanced driver list with vehicle and route info
     driver_list = []
@@ -157,11 +161,15 @@ class DriverSearchResource(Resource):
             
         # Normalize input (though ilike handles the match, cleaning input is good)
         email = email.strip()
+        print(f"DEBUG: Searching for driver email: '{email}'")
             
         # Use ilike for case-insensitive DB match
         user = User.query.filter(User.email.ilike(email)).first()
         if not user:
+            print(f"DEBUG: Driver not found in DB.")
             return make_response(message="Not Found", error="Driver not found", status_code=404)
+        
+        print(f"DEBUG: Found user {user.id}, Role: {user.role}, Sacco ID: {user.sacco_id}")
             
         if user.role != User.ROLE_DRIVER:
             return make_response(message="Invalid Role", error="User is not a driver", status_code=400)
