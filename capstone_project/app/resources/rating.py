@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 from flask_restful import Api, Resource
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from ..models.rating import Rating
 from ..extensions import db
 from ..utils.responses import success_response, error_response
@@ -12,20 +12,31 @@ api = Api(rating_bp)
 class RatingListResource(Resource):
     @jwt_required()
     def get(self):
-        user_info = get_jwt_identity()
-        role = user_info.get('role')
+        current_identity = get_jwt_identity()
+        try:
+             user_id = int(current_identity)
+        except ValueError:
+             return error_response("Invalid User ID in token", 401)
+             
+        claims = get_jwt()
+        role = claims.get('role')
         
         if role == 'sacco_manager':
             # Manager sees all ratings involved with their Sacco (for now all ratings to simplify)
             ratings = Rating.query.all()
         else:
-            ratings = Rating.query.filter_by(user_id=user_info['id']).all()
+            ratings = Rating.query.filter_by(user_id=user_id).all()
             
         return success_response(data=[r.to_dict() for r in ratings], message="Ratings retrieved")
 
     @jwt_required()
     def post(self):
-        user_info = get_jwt_identity()
+        current_identity = get_jwt_identity()
+        try:
+             user_id = int(current_identity)
+        except ValueError:
+             return error_response("Invalid User ID in token", 401)
+        
         data = request.get_json()
         
         if not data.get('matatu_id') or not data.get('score'):
@@ -33,7 +44,7 @@ class RatingListResource(Resource):
 
         try:
             rating = Rating(
-                user_id=user_info['id'],
+                user_id=user_id,
                 matatu_id=data['matatu_id'],
                 score=data['score'],
                 comment=data.get('comment')
@@ -48,8 +59,8 @@ class RatingListResource(Resource):
 class RatingReplyResource(Resource):
     @jwt_required()
     def patch(self, rating_id):
-        user_info = get_jwt_identity()
-        if user_info.get('role') != User.ROLE_SACCO_MANAGER:
+        claims = get_jwt()
+        if claims.get('role') != User.ROLE_SACCO_MANAGER:
             return error_response("Unauthorized", 403)
             
         rating = db.session.get(Rating, rating_id)
