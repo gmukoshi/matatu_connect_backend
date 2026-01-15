@@ -30,10 +30,8 @@ class Rating(db.Model):
             "user_id": self.user_id,
             "matatu_id": self.matatu_id,
             "score": self.score,
-            "score": self.score,
             "comment": self.comment,
             "matatu_plate": self.matatu.plate_number if self.matatu else "Unknown",
-            "reply": self.reply,
             "reply": self.reply,
             "created_at": self.created_at.isoformat()
         }
