@@ -1,4 +1,4 @@
-alembic==1.17.2
+alembic==1.16.5
 aniso8601==10.0.1
 bcrypt==5.0.0
 bidict==0.23.1
