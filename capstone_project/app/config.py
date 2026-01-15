@@ -27,8 +27,8 @@ class Config:
 
     # --- M-PESA DARAJA API (Fintech Integration) ---
     # Get these from https://developer.safaricom.co.ke/
-    MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "your_consumer_key_here")
-    MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "your_consumer_secret_here")
+    MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "8xoAQBO7BIGkEx8GERN2TetmhjECMs9QirSzQqFzh32oR9zu")
+    MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "Q2WFZMo1Okt0QuAjv8MzDFgxwbYROqLV1Xm5TGyknd33dP4eS42Zp9qorYGuUI3B")
     
     # Environment: 'sandbox' or 'production'
     MPESA_ENV = os.getenv("MPESA_ENV", "sandbox")
@@ -45,8 +45,9 @@ class Config:
     # Passkey for Lipa Na M-Pesa Online (STK Push)
     MPESA_PASSKEY = os.getenv("MPESA_PASSKEY", "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919")
     
-    # The URL Safaricom will send payment results to (Must be a public URL/Ngrok)
-    MPESA_CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "https://your-domain.com/api/payments/callback")
+    # The URL Safaricom will send payment results to
+    # Switched to Render URL by default to ensure stability without Ngrok
+    MPESA_CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "https://matatu-connect-backend-l7lb.onrender.com/api/payments/callback")
 
     # --- Email Service (SendGrid) ---
     SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
