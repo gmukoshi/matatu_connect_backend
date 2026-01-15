@@ -5,7 +5,7 @@ class Matatu(db.Model):
     __tablename__ = "matatus"
 
     id = db.Column(db.Integer, primary_key=True)
-    sacco_id = db.Column(db.Integer, nullable=False, index=True)
+    sacco_id = db.Column(db.Integer, db.ForeignKey('saccos.id'), nullable=False, index=True)
     plate_number = db.Column(db.String(20), unique=True, nullable=False)
     capacity = db.Column(db.Integer, nullable=False)
 
@@ -21,6 +21,7 @@ class Matatu(db.Model):
     # Relationships
     driver = db.relationship("User", backref=db.backref("matatus", lazy=True))
     route = db.relationship("Route", backref=db.backref("matatus", lazy=True))
+    sacco = db.relationship("Sacco", backref=db.backref("matatus", lazy=True))
 
     def save(self):
         db.session.add(self)

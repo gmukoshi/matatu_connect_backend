@@ -28,6 +28,7 @@ def register():
     user = User(
         name=name,
         email=email,
+        phone_number=data.get("phone_number"), # Added missing field
         role=data.get("role", "commuter"),
         license_number=license_number,
         verification_status="pending" if data.get("role") == "driver" else "approved",
