@@ -1,6 +1,7 @@
 import base64
 from datetime import datetime
 import requests
+import traceback
 from flask import Blueprint, request, current_app
 from flask_restful import Api, Resource
 from requests.auth import HTTPBasicAuth
