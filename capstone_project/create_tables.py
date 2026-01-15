@@ -3,7 +3,7 @@ from app.extensions import db
 from app.models.log import MatatuLog
 from app.models.user import User
 from app.models.matatu import Matatu
-from app.models.route import Route, Checkpoint
+from app.models.route import Route
 from app.models.booking import Booking
 from app.models.payment import Payment
 from app.models.sacco import Sacco
