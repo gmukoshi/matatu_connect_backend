@@ -25,6 +25,7 @@ class Booking(db.Model):
             "status": self.status,
             "booking_date": self.booking_date.isoformat(),
             "user_name": self.user.name if self.user else "Unknown",
+            "user_phone": self.user.phone_number if self.user else None,
             "matatu": {
                 "id": self.matatu.id,
                 "plate": self.matatu.plate_number, # Fixed from registration_number
