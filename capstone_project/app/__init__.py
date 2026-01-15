@@ -71,10 +71,14 @@ def create_app(config_class=None):
     # 3. CORS - Allow your deployed frontend and any localhost port for dev
     # Add your actual Render frontend URL to this list once deployed
     allowed_origins = [
-        "https://your-frontend-name.onrender.com",
+        os.getenv("FRONTEND_URL"), # Allow the configured frontend URL
+        "https://matatu-connect-frontend.vercel.app", # Likely default vercel alias
+        r"https?://matatu-connect-frontend-.*\.vercel\.app", # Allow Vercel preview deployments
         r"https?://localhost:\d+",
         r"https?://127\.0\.0\.1:\d+"
     ]
+    # Filter out None values in case FRONTEND_URL isn't set
+    allowed_origins = [origin for origin in allowed_origins if origin]
     CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
 
     # 4. Initialize Extensions
