@@ -31,7 +31,7 @@ def register():
         phone_number=data.get("phone_number"), # Added missing field
         role=data.get("role", "commuter"),
         license_number=license_number,
-        verification_status="pending" if data.get("role") == "driver" else "approved",
+        verification_status=data.get("verification_status", "pending" if data.get("role") == "driver" else "approved"),
         sacco_id=data.get("sacco_id") # Assign selected Sacco
     )
 
