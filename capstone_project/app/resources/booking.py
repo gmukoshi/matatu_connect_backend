@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 from flask_restful import Api, Resource
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from ..models.booking import Booking
 from ..extensions import db, socketio
 from ..utils.responses import success_response, error_response
@@ -117,9 +117,9 @@ class MatatuBookingsResource(Resource):
 class TripCompletionResource(Resource):
     @jwt_required()
     def post(self):
-        user_info = get_jwt_identity()
-        user_id = user_info['id']
-        role = user_info.get('role')
+        user_id = get_jwt_identity()
+        claims = get_jwt()
+        role = claims.get('role')
 
         if role != 'driver':
             return error_response("Unauthorized: Only drivers can complete trips", 403)

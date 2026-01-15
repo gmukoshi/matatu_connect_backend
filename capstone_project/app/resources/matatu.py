@@ -26,9 +26,9 @@ class MatatuListResource(Resource):
             if not data.get("plate_number"):
                 return error_response("Plate number is required", 400)
 
-            current_identity = get_jwt_identity()
-            # Handle both identity formats (some versions return string, others dict)
-            user_id = current_identity['id'] if isinstance(current_identity, dict) else current_identity
+            current_user_id = get_jwt_identity()
+            # New JWT structure: identity is always a string ID
+            user_id = current_user_id
             
             user = db.session.get(User, user_id)
             if not user:
