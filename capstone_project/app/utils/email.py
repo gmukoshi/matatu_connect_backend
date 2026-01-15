@@ -1,33 +1,11 @@
-import os
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-from flask import current_app
-
 def send_email(to_email, subject, content):
     """
-    Sends an email using SendGrid.
+    MOCK EMAIL SERVICE (Demo Mode)
+    Instead of sending real emails, this logs them to the console.
     """
-    api_key = current_app.config.get('SENDGRID_API_KEY')
-    sender_email = current_app.config.get('MAIL_DEFAULT_SENDER')
-
-    if not api_key:
-        print("WARNING: SENDGRID_API_KEY not configured. Email not sent.")
-        return False
-
-    message = Mail(
-        from_email=sender_email,
-        to_emails=to_email,
-        subject=subject,
-        html_content=content
-    )
-    
-    try:
-        sg = SendGridAPIClient(api_key)
-        response = sg.send(message)
-        print(f"Email sent to {to_email} | Status Code: {response.status_code}")
-        return True
-    except Exception as e:
-        # Log error but return False so caller knows, without crashing app
-        print(f"ERROR: Failed to send email to {to_email}. Error: {str(e)}")
-        return False
-        return False
+    print(f"\n[MOCK EMAIL SENT] -----------------------------")
+    print(f"To: {to_email}")
+    print(f"Subject: {subject}")
+    print(f"Body: {content}")
+    print(f"-----------------------------------------------\n")
+    return True
