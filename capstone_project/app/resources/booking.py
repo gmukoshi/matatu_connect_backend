@@ -14,9 +14,22 @@ class BookingListResource(Resource):
     @jwt_required()
     def get(self):
         """Commuters see their own, Admins see all, Drivers see their bus's"""
-        user_info = get_jwt_identity()
-        role = user_info.get('role')
-        user_id = user_info['id']
+        current_identity = get_jwt_identity()
+        try:
+             user_id = int(current_identity)
+        except ValueError:
+             return error_response("Invalid User ID in token", 401)
+        
+        claims = get_jwt()
+        role = claims.get('role')
+
+        # The original `get` method for BookingListResource did not take a matatu_id.
+        # This `if matatu_id:` block seems misplaced if it's intended for this resource.
+        # Assuming it's a comment or placeholder for future logic,
+        # and the primary goal is to update identity parsing and role extraction.
+        # The existing logic for admin/driver/commuter will be adapted to the new user_id/role.
+        # If the intent was to merge with MatatuBookingsResource, that's a larger change.
+        # For now, I will integrate the identity parsing and keep the original logic flow.
 
         if role == 'admin':
             bookings = Booking.query.all()
