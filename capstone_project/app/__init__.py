@@ -88,6 +88,22 @@ def create_app(config_class=None):
     migrate.init_app(app, db)
     socketio.init_app(app, cors_allowed_origins="*") # Required for WebSockets to work across domains
 
+    # JWT Error handlers for debugging
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error_string):
+        print(f"DEBUG: JWT Invalid Token: {error_string}")
+        return jsonify({"message": "Invalid Token", "error": error_string}), 422
+
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        print(f"DEBUG: JWT Expired:Header={jwt_header} Payload={jwt_payload}")
+        return jsonify({"message": "Token Expired", "error": "token_expired"}), 401
+    
+    @jwt.unauthorized_loader
+    def missing_token_callback(error_string):
+        print(f"DEBUG: JWT Missing: {error_string}")
+        return jsonify({"message": "Missing Token", "error": error_string}), 401
+
     # 5. Error Handlers
     app.register_error_handler(404, handle_404_error)
     app.register_error_handler(500, handle_500_error)
