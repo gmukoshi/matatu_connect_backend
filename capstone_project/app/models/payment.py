@@ -17,7 +17,7 @@ class Payment(db.Model):
     checkout_request_id = db.Column(db.String(100), unique=True, nullable=True)
     merchant_request_id = db.Column(db.String(100), nullable=True)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
     def save(self):
         db.session.add(self)
