@@ -23,25 +23,65 @@ class MpesaHelper:
     """Helper class to handle Daraja API interactions"""
     
     @staticmethod
+    def _make_request(method, endpoint, **kwargs):
+        """
+        Robust request wrapper that handles Render's DNS failures by falling back to IP.
+        """
+        base_url = current_app.config.get('MPESA_API_BASE_URL')
+        url = f"{base_url}{endpoint}"
+        
+        # Strategies: 1. Normal, 2. Fallback IP (Hardcoded for Safaricom Sandbox)
+        strategies = [
+            {"verify": True, "url_base": base_url},
+            {"verify": False, "url_base": "https://45.223.20.17"} # Safaricom Sandbox IP
+        ]
+        
+        last_error = None
+        
+        for strategy in strategies:
+            try:
+                # Replace base URL if strategy dictates
+                if strategy["url_base"] != base_url:
+                    current_url = url.replace(base_url, strategy["url_base"])
+                else:
+                    current_url = url
+                    
+                print(f"DEBUG: Attempting Request to {current_url} | Verify={strategy['verify']}")
+                
+                if method == 'GET':
+                    res = requests.get(current_url, verify=strategy['verify'], timeout=30, **kwargs)
+                else:
+                    res = requests.post(current_url, verify=strategy['verify'], timeout=30, **kwargs)
+                    
+                return res
+            except Exception as e:
+                print(f"Request failed with {strategy['url_base']}: {e}")
+                last_error = e
+                # Continue to next strategy
+                
+        # If all failed
+        raise last_error
+
+    @staticmethod
     def get_access_token():
         """Fetch OAuth2 access token from Safaricom"""
         consumer_key = current_app.config.get('MPESA_CONSUMER_KEY', '').strip()
         consumer_secret = current_app.config.get('MPESA_CONSUMER_SECRET', '').strip()
-        base_url = current_app.config.get('MPESA_API_BASE_URL')
-        api_url = f"{base_url}/oauth/v1/generate?grant_type=client_credentials"
+        
+        endpoint = "/oauth/v1/generate?grant_type=client_credentials"
         
         try:
-            res = requests.get(api_url, auth=HTTPBasicAuth(consumer_key, consumer_secret), timeout=30)
+            # Use our robust wrapper
+            res = MpesaHelper._make_request('GET', endpoint, auth=HTTPBasicAuth(consumer_key, consumer_secret))
+            
             if res.status_code != 200:
                 print(f"M-Pesa Token Error: {res.text}")
-                # Return the actual error to the frontend for easier debugging
                 raise Exception(f"Token Gen Failed: {res.status_code} - {res.text}")
             return res.json().get('access_token')
         except Exception as e:
             log_debug(f"EXCEPTION IN MpesaHelper.get_access_token: {str(e)}")
             log_debug(traceback.format_exc())
             print(f"M-Pesa Token Exception: {e}")
-            # Re-raise so the caller knowns exactly WHY it failed
             raise e
 
     @staticmethod
@@ -51,7 +91,7 @@ class MpesaHelper:
             access_token = MpesaHelper.get_access_token()
         except Exception as e:
             print(f"Token Error: {e}")
-            raise Exception(f"Failed to generate Access Token: {str(e)}") # Pass detailed error up
+            raise Exception(f"Failed to generate Access Token: {str(e)}")
 
         if not access_token:
             print("Failed to generate M-Pesa access token (None returned)")
@@ -77,7 +117,7 @@ class MpesaHelper:
             "Timestamp": timestamp,
             "TransactionType": "CustomerPayBillOnline",
             "Amount": int(amount),
-            "PartyA": phone_number, # Commuter's phone
+            "PartyA": phone_number,
             "PartyB": business_short_code,
             "PhoneNumber": phone_number,
             "CallBackURL": callback_url,
@@ -85,9 +125,12 @@ class MpesaHelper:
             "TransactionDesc": f"Payment for Booking {booking_id}"
         }
 
-        api_url = f"{current_app.config.get('MPESA_API_BASE_URL')}/mpesa/stkpush/v1/processrequest"
+        endpoint = "/mpesa/stkpush/v1/processrequest"
         print(f"M-Pesa Request: {payload}")
-        response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+        
+        # Use our robust wrapper
+        response = MpesaHelper._make_request('POST', endpoint, json=payload, headers=headers)
+        
         print(f"M-Pesa Response: {response.text}")
         return response.json()
 
