@@ -1,1 +1,1 @@
-web: gunicorn --chdir capstone_project run:app
+web: gunicorn -k eventlet -w 1 --bind 0.0.0.0:$PORT --chdir capstone_project run:app
