@@ -145,8 +145,12 @@ class MatatuResource(Resource):
                 
                 # 3. Delete Bookings
                 Booking.query.filter(Booking.id.in_(booking_ids)).delete(synchronize_session=False)
+
+            # 4. Delete Logs (New Addition)
+            from ..models.log import MatatuLog
+            MatatuLog.query.filter_by(matatu_id=matatu_id).delete(synchronize_session=False)
             
-            # 4. Delete Matatu
+            # 5. Delete Matatu
             db.session.delete(matatu)
             db.session.commit()
             return success_response(data=None, message="Matatu deleted")
