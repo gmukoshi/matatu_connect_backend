@@ -43,9 +43,11 @@ def register():
         if not user.sacco_id and sacco_name and user.role == "sacco_manager":
             from ..models.sacco import Sacco
             # Check if name exists to prevent duplicates via name-entry
+            # Check if name exists to prevent duplicates via name-entry
             existing_sacco = Sacco.query.filter_by(name=sacco_name).first()
             if existing_sacco:
-                user.sacco_id = existing_sacco.id
+                db.session.rollback()
+                return {"error": f"Sacco '{sacco_name}' already exists. Please select it from the list to join."}, 409
             else:
                 new_sacco = Sacco(name=sacco_name)
                 db.session.add(new_sacco)
