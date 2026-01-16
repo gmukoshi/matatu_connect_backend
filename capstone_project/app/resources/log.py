@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 from flask_restful import Api, Resource
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.models.log import MatatuLog
 from app.models.matatu import Matatu
 from app.extensions import db
@@ -12,9 +12,9 @@ api = Api(log_bp)
 class DriverLogResource(Resource):
     @jwt_required()
     def post(self):
-        user_info = get_jwt_identity()
-        user_id = user_info['id']
-        role = user_info.get('role')
+        user_id = get_jwt_identity()
+        claims = get_jwt()
+        role = claims.get('role')
         
         if role != 'driver':
              return error_response("Unauthorized: Only drivers can submit logs", 403)
