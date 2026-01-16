@@ -9,7 +9,7 @@ class MatatuLog(db.Model):
     matatu_id = db.Column(db.Integer, db.ForeignKey("matatus.id"), nullable=False, index=True)
     driver_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     
-    log_date = db.Column(db.Date, default=datetime.utcnow().date, nullable=False)
+    log_date = db.Column(db.Date, default=datetime.now().date, nullable=False)
     
     passengers_carried = db.Column(db.Integer, default=0, nullable=False)
     fuel_liters = db.Column(db.Float, default=0.0, nullable=False)
@@ -17,7 +17,7 @@ class MatatuLog(db.Model):
     
     amount_spent = db.Column(db.Float, default=0.0) # Cost of fuel/expenses
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
     # Relationships
     matatu = db.relationship("Matatu", backref=db.backref("logs", lazy=True))

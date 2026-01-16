@@ -88,18 +88,10 @@ class SaccoDashboardStats(Resource):
             # Assuming 'Active Fleet' text on frontend now represents 'Available Drivers'
             
             # Count drivers in this Sacco
+            # Active Fleet (Drivers)
+            # Count ALL drivers linked to this Sacco (whether assigned a vehicle or not) to show "Available Workforce"
             active_drivers = User.query.filter_by(sacco_id=sacco_id, role='driver').count()
-            
-            # Total fleet count could still be vehicles or total drivers. Let's make it Active Drivers / Total Vehicles
-            # Or just Total Drivers.
-            # Interpreting request "fetch available drivers":
             active_fleet_count = active_drivers
-            total_fleet_count =  Matatu.query.filter_by(sacco_id=sacco_id).count() # Keep total as vehicles count for context? Or drivers?
-            # Let's switch both to Drivers to be consistent? 
-            # "Active Fleet" usually X/Y. Let's do Active Drivers / Total Vehicles (Drivers vs Cars available)
-            
-            # BETTER INTERPRETATION: The user wants to know how many drivers are available.
-            # Let's just return the Driver Count.
 
             # Daily Passengers (from logs today)
             daily_passengers = db.session.query(func.sum(MatatuLog.passengers_carried))\
@@ -108,19 +100,19 @@ class SaccoDashboardStats(Resource):
                 .filter(MatatuLog.log_date == date.today())\
                 .scalar() or 0
 
-            # Fuel Efficiency (Total Mileage / Total Fuel) - Lifetime avg for simplicity or last 30 days
-            # Let's do lifetime for now
-            total_mileage = db.session.query(func.sum(MatatuLog.mileage_km))\
+            # Fuel Efficiency (Total Mileage / Total Fuel)
+            # Calculated from logs
+            total_mileage_logs = db.session.query(func.sum(MatatuLog.mileage_km))\
                 .join(Matatu, MatatuLog.matatu_id == Matatu.id)\
                 .filter(Matatu.sacco_id == sacco_id)\
                 .scalar() or 0.0
             
-            total_fuel = db.session.query(func.sum(MatatuLog.fuel_liters))\
+            total_fuel_logs = db.session.query(func.sum(MatatuLog.fuel_liters))\
                 .join(Matatu, MatatuLog.matatu_id == Matatu.id)\
                 .filter(Matatu.sacco_id == sacco_id)\
                 .scalar() or 0.0
 
-            fuel_efficiency = round(total_mileage / total_fuel, 1) if total_fuel > 0 else 0.0
+            fuel_efficiency = round(total_mileage_logs / total_fuel_logs, 1) if total_fuel_logs > 0 else 0.0
             
             # Total Drivers in Sacco
             # Assuming User model refers to Sacco (sacco_id) or we look at Matatu.driver_id... 
