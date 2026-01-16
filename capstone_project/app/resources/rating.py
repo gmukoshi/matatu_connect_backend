@@ -22,8 +22,13 @@ class RatingListResource(Resource):
         role = claims.get('role')
         
         if role == 'sacco_manager':
-            # Manager sees all ratings involved with their Sacco (for now all ratings to simplify)
-            ratings = Rating.query.all()
+            # FILTER: Only show ratings for Matatus in the Manager's Sacco
+            user = User.query.get(user_id)
+            if user and user.sacco_id:
+                from ..models.matatu import Matatu # Delayed import to avoid circular dep if any
+                ratings = Rating.query.join(Matatu).filter(Matatu.sacco_id == user.sacco_id).all()
+            else:
+                ratings = []
         else:
             ratings = Rating.query.filter_by(user_id=user_id).all()
             
