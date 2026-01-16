@@ -50,4 +50,32 @@ class DriverLogResource(Resource):
         except Exception as e:
             return error_response(f"Failed to submit log: {str(e)}", 500)
 
+    @jwt_required()
+    def get(self):
+        # Fetch Filtered Logs
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        role = claims.get('role')
+        sacco_id = claims.get('sacco_id') # Managers usually have this in token
+        
+        if role == 'sacco_manager':
+            # 1. Fetch by Sacco
+            if not sacco_id:
+                # Fallback: fetch User fresh
+                user = User.query.get(int(user_identity))
+                sacco_id = user.sacco_id
+                
+            if sacco_id:
+                # Join with Matatu to filter by Sacco
+                logs = MatatuLog.query.join(Matatu).filter(Matatu.sacco_id == sacco_id).order_by(MatatuLog.created_at.desc()).all()
+            else:
+                logs = []
+        elif role == 'driver':
+            # 2. Fetch by Driver (Own logs)
+            logs = MatatuLog.query.filter_by(driver_id=int(user_identity)).order_by(MatatuLog.created_at.desc()).all()
+        else:
+            return error_response("Unauthorized", 403)
+            
+        return success_response(data=[l.to_dict() for l in logs], message="Logs retrieved")
+
 api.add_resource(DriverLogResource, '/')
