@@ -64,10 +64,14 @@ class SaccoDashboardStats(Resource):
     @sacco_manager_required
     def get(self):
         try:
-            user_info = get_jwt_identity()
-            # In a real app, you'd fetch the user obj if sacco_id isn't in JWT
-            # Assuming sacco_id is in JWT or we fetch User
-            user = db.session.get(User, user_info['id'])
+            user_identity = get_jwt_identity()
+            # Handle identity as dict or direct ID
+            if isinstance(user_identity, dict):
+                user_id = user_identity.get('id')
+            else:
+                user_id = user_identity
+
+            user = db.session.get(User, user_id)
             if not user or not user.sacco_id:
                 return error_response("User is not assigned to a Sacco", status_code=400)
             
@@ -195,6 +199,7 @@ class SaccoDashboardStats(Resource):
                 "revenue_yesterday": float(revenue_yesterday)
             }
             
+            print(f"DEBUG SaccoStats: {stats}")
             return success_response(data=stats, message="Sacco stats retrieved")
 
         except Exception as e:
