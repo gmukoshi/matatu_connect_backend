@@ -186,7 +186,7 @@ class SaccoDashboardStats(Resource):
             stats = {
                 "total_revenue": float(total_revenue),
                 "total_revenue": float(total_revenue),
-                "active_fleet": f"{active_fleet_count} Drivers", # Simplified as requested
+                "active_fleet": f"{active_fleet_count} Driver" if active_fleet_count == 1 else f"{active_fleet_count} Drivers",
                 # "active_fleet": f"{active_fleet_count}/{total_fleet_count}", # Old vehicle format
                 "daily_passengers": int(daily_passengers),
                 "fuel_efficiency": f"{fuel_efficiency} km/L",
