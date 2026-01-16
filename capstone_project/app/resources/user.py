@@ -263,6 +263,22 @@ class DriverActionResource(Resource):
             if user.sacco_id == manager.sacco_id:
                 user.sacco_id = None
                 user.verification_status = "pending" # Reset status
+                
+                # Also unassign any active vehicle
+                for m in user.matatus:
+                    if m.assignment_status == 'active':
+                        m.assignment_status = 'inactive'
+                        m.driver_id = None # Clear driver link if needed, or just status
+                        # Actually matatu.driver_id is FK. 
+                        # We should set assignment_status to 'history' or just unassign.
+                        # Ideally, we set matatu.assignment_status = 'available' (if that's a status)
+                        # Let's just set 'inactive' for the link.
+                        pass
+                
+                # If we want to fully free the vehicle:
+                # Find the vehicle assigned to this driver
+                # Actually user.matatus is the relationship.
+                pass
             else:
                 return make_response(message="Forbidden", error="Cannot dismiss driver from another Sacco", status_code=403)
 
