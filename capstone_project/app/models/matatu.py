@@ -44,6 +44,7 @@ class Matatu(db.Model):
             "capacity": self.capacity,
             "driver_id": self.driver_id,
             "driver": self.driver.name if self.driver else "No Driver Assigned",
+            "driver_phone": self.driver.phone_number if self.driver else None,
             "assignment_status": self.assignment_status,
             "route_id": self.route_id,
             "route": route_data,
