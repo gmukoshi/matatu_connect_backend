@@ -42,5 +42,6 @@ class User(db.Model):
             "role": self.role,
             "sacco_id": self.sacco_id,
             "license_number": self.license_number,
-            "verification_status": self.verification_status
+            "verification_status": self.verification_status,
+            "phone_number": self.phone_number
         }
