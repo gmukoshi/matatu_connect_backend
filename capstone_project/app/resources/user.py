@@ -89,22 +89,31 @@ class UserListResource(Resource):
 
 class UserResource(Resource):
     # Optional: public profile or admin fetch
+    @jwt_required()
     def get(self, user_id):
         user = db.session.get(User, user_id)
         if not user:
             return make_response(message="Not found", error="User not found", status_code=404)
         return make_response(message="User fetched successfully", data=user.to_dict(), status_code=200)
 
-    # Optional: admin delete
+    @jwt_required()
     def delete(self, user_id):
-        user = db.session.get(User, user_id)
-        if not user:
+        current_user_id = get_jwt_identity()
+        current_user = db.session.get(User, current_user_id) # ID is string from identity
+        
+        user_to_delete = db.session.get(User, user_id)
+        if not user_to_delete:
             return make_response(message="Not found", error="User not found", status_code=404)
 
+        # Permission Check: Self or Admin
+        # Convert IDs to string/int consistently for comparison
+        if str(current_user.id) != str(user_id) and current_user.role != User.ROLE_ADMIN:
+             return make_response(message="Forbidden", error="You can only delete your own account", status_code=403)
+
         try:
-            db.session.delete(user)
+            db.session.delete(user_to_delete)
             db.session.commit()
-            return make_response(message="User deleted successfully", status_code=200)
+            return make_response(message="Account deleted successfully", status_code=200)
         except Exception as e:
             db.session.rollback()
             return make_response(message="Database Error", error=str(e), status_code=500)
