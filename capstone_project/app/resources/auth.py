@@ -1,7 +1,9 @@
 from flask import Blueprint, request
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from ..extensions import db
 from ..models.user import User
+
+from ..utils.validators import validate_password # Imported validator
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -14,6 +16,11 @@ def register():
 
     if not email or not password or not name:
         return {"error": "name, email and password are required"}, 400
+
+    # Validate Password Strength
+    _, password_error = validate_password(password)
+    if password_error:
+        return {"error": password_error}, 400
     
     if data.get("role") == "driver" and not data.get("licence"):
          return {"error": "License number is required for drivers"}, 400
@@ -108,3 +115,18 @@ def login():
         "access_token": access_token,
         "refresh_token": refresh_token
     }, 200
+
+
+@auth_bp.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return {"error": "User not found"}, 404
+        
+    claims = {"role": user.role, "sacco_id": user.sacco_id}
+    new_access_token = create_access_token(identity=current_user_id, additional_claims=claims)
+    
+    return {"access_token": new_access_token}, 200

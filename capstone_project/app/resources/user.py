@@ -109,6 +109,8 @@ class UserResource(Resource):
             db.session.rollback()
             return make_response(message="Database Error", error=str(e), status_code=500)
 
+from ..utils.validators import validate_password # Imported validator
+
 class RegisterResource(Resource):
     def post(self):
         data = request.get_json() or {}
@@ -120,6 +122,15 @@ class RegisterResource(Resource):
                 status_code=400
             )
 
+        # Validate Password Strength
+        _, password_error = validate_password(data["password"])
+        if password_error:
+            return make_response(
+                message="Validation Error",
+                error=password_error,
+                status_code=400
+            )
+
         if User.query.filter_by(email=data["email"]).first():
             return make_response(message="Conflict", error="Email already exists", status_code=409)
 
@@ -127,7 +138,7 @@ class RegisterResource(Resource):
         role = data.get("role", "commuter")  # Default to commuter
         sacco_name = data.get("sacco_name")
 
-        user = User(username=data["username"], email=data["email"], role=role)
+        user = User(name=data["username"], email=data["email"], role=role) # Changed username->name to match User model
         user.set_password(data["password"])
 
         try:
