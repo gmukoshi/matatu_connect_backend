@@ -1,9 +1,12 @@
+import os
 import eventlet
-eventlet.monkey_patch()
+
+# Check if already patched to avoid double patching with gunicorn
+if not eventlet.patcher.is_monkey_patched(os):
+    eventlet.monkey_patch()
 
 from app import create_app
 from app.extensions import socketio
-import os
 
 app = create_app()
 
