@@ -53,9 +53,10 @@ def create_app(config_class=None):
     
     # Load configuration
     if config_class is None:
-        # Default to DevelopmentConfig
-        from .config import DevelopmentConfig
-        app.config.from_object(DevelopmentConfig)
+        from .config import DevelopmentConfig, ProductionConfig
+        environment = os.getenv("FLASK_ENV", "")
+        use_production = environment == "production" or os.getenv("RENDER")
+        app.config.from_object(ProductionConfig if use_production else DevelopmentConfig)
         
         # Override with any manual environment updates if needed (e.g. Render DB fix)
         database_url = os.getenv("DATABASE_URL")
