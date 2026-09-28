@@ -1,1 +1,1 @@
-web: gunicorn -k eventlet -w 1 --bind 0.0.0.0:$PORT --chdir capstone_project run:app
+web: FLASK_ENV=production gunicorn -k eventlet -w 1 --bind 0.0.0.0:$PORT --chdir capstone_project run:app
