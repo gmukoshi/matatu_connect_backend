@@ -76,7 +76,6 @@ class ProductionConfig(Config):
         "pool_recycle": 300,
         "connect_args": {
             "connect_timeout": 10,
-            "sslmode": "require",
         },
     }
     # In production, ensure the DATABASE_URL uses 'postgresql://' instead of 'postgres://'
