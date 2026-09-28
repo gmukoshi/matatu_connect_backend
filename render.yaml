@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: matatu-connect-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --chdir capstone_project -k eventlet -w 1 --bind 0.0.0.0:$PORT run:app
+    healthCheckPath: /health
