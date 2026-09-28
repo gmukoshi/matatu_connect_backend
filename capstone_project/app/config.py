@@ -17,6 +17,10 @@ class Config:
         "DATABASE_URL", "postgresql://postgres:password@localhost:5432/matatu_db"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
 
     # --- JWT Security ---
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-dev-secret-key")
@@ -67,6 +71,14 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     PROPAGATE_EXCEPTIONS = True
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "connect_args": {
+            "connect_timeout": 10,
+            "sslmode": "require",
+        },
+    }
     # In production, ensure the DATABASE_URL uses 'postgresql://' instead of 'postgres://'
     # (Heroku and some providers often use the 'postgres' prefix which SQLAlchemy 1.4+ dislikes)
 
